@@ -1,0 +1,16 @@
+[
+  {
+    "date": "2026-01-07T12:08:34.740Z",
+    "items": [
+      {
+        "productId": "5e39n6jqg",
+        "name": "su",
+        "quantity": 7,
+        "priceAtSale": 15
+      }
+    ],
+    "totalAmount": 106.05,
+    "staffId": "admin1",
+    "id": "mm4m2q9fa"
+  }
+]

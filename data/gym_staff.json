@@ -1,0 +1,68 @@
+[
+  {
+    "id": "admin1",
+    "name": "Sistem Admin",
+    "role": "admin",
+    "gender": "male",
+    "branches": [],
+    "commissionRate": 0,
+    "email": "admin@gym.com",
+    "hireDate": "2024-01-01",
+    "paymentConfig": {
+      "model": "salaried",
+      "salaryAmount": 30000
+    },
+    "password": "1234"
+  },
+  {
+    "id": "manager1",
+    "name": "Mehmet Yönetici",
+    "role": "manager",
+    "gender": "male",
+    "branches": [
+      "fitness"
+    ],
+    "commissionRate": 0,
+    "hireDate": "2024-01-01",
+    "paymentConfig": {
+      "model": "salaried",
+      "salaryAmount": 25000
+    },
+    "password": "1234"
+  },
+  {
+    "id": "trainer1",
+    "name": "Ahmet Hoca",
+    "role": "trainer",
+    "gender": "male",
+    "branches": [
+      "fitness",
+      "functional",
+      "boxing"
+    ],
+    "commissionRate": 40,
+    "hireDate": "2024-01-01",
+    "paymentConfig": {
+      "model": "commission",
+      "commissionRate": 40
+    },
+    "password": "1234"
+  },
+  {
+    "id": "physio1",
+    "name": "Ayşe Fizyo",
+    "role": "physio",
+    "gender": "female",
+    "branches": [
+      "reformer",
+      "pilates"
+    ],
+    "commissionRate": 50,
+    "hireDate": "2024-01-01",
+    "paymentConfig": {
+      "model": "commission",
+      "commissionRate": 50
+    },
+    "password": "1234"
+  }
+]

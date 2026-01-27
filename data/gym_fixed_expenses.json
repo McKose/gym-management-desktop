@@ -1,0 +1,16 @@
+[
+  {
+    "title": "Kira",
+    "amount": 30000,
+    "dayOfMonth": 1,
+    "type": "fixed",
+    "id": "ihx0qt8yq"
+  },
+  {
+    "title": "Elektrik",
+    "amount": 30000,
+    "dayOfMonth": 17,
+    "type": "variable",
+    "id": "4ow5lhc70"
+  }
+]

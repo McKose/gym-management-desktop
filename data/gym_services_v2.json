@@ -1,0 +1,23 @@
+[
+  {
+    "id": "fitness",
+    "name": "Fitness",
+    "category": "SELF_SERVICE",
+    "isActive": true,
+    "description": "Bireysel spor salonu kullanımı."
+  },
+  {
+    "id": "functional",
+    "name": "Fonksiyonel",
+    "category": "COACHING",
+    "isActive": true,
+    "description": "Fonksiyonel antrenman dersleri."
+  },
+  {
+    "id": "reformer",
+    "name": "Reformer",
+    "category": "COACHING",
+    "isActive": true,
+    "description": "Aletli pilates dersleri."
+  }
+]

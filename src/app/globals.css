@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  /* Minimal Light Theme */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f4f5;
+
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+
+  --border-subtle: #e4e4e7;
+}
+
+/* Layer Base to reset defaults correctly with Tailwind */
+@layer base {
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-geist-sans), Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Utilities */
+.glass-panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+}
+
+.btn-primary {
+  background-color: white;
+  color: black;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
+  font-size: 0.875rem;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "name": "su",
+    "category": "drink",
+    "price": 15,
+    "stock": 93,
+    "cost": 5,
+    "taxRate": 1,
+    "id": "5e39n6jqg"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "installments": 1,
+    "rate": 2
+  },
+  {
+    "installments": 3,
+    "rate": 5
+  },
+  {
+    "installments": 6,
+    "rate": 10
+  },
+  {
+    "installments": 9,
+    "rate": 15
+  },
+  {
+    "installments": 12,
+    "rate": 20
+  }
+]

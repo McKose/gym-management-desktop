@@ -1,0 +1,66 @@
+[
+  {
+    "id": "p8",
+    "name": "8 Derslik Paket",
+    "type": "DERS_PAKETI",
+    "serviceId": "fitness",
+    "price": 2000,
+    "sessionCount": 8,
+    "validityDays": 30,
+    "validityRequired": true,
+    "sortOrder": 1,
+    "sessionFormat": "BIREYSEL",
+    "isActive": true
+  },
+  {
+    "id": "p12",
+    "name": "12 Derslik Paket",
+    "type": "DERS_PAKETI",
+    "serviceId": "fitness",
+    "price": 2800,
+    "sessionCount": 12,
+    "validityDays": 45,
+    "validityRequired": true,
+    "sortOrder": 1,
+    "sessionFormat": "BIREYSEL",
+    "isActive": true
+  },
+  {
+    "id": "g8",
+    "name": "Reformer Grup (8 Ders)",
+    "type": "DERS_PAKETI",
+    "serviceId": "reformer",
+    "price": 1500,
+    "sessionCount": 8,
+    "validityDays": 30,
+    "validityRequired": true,
+    "sortOrder": 1,
+    "sessionFormat": "GRUP",
+    "isActive": true
+  },
+  {
+    "id": "1",
+    "name": "Aylık Abonman",
+    "type": "ABONMAN",
+    "serviceId": "fitness",
+    "price": 1500,
+    "validityDays": 30,
+    "validityRequired": false,
+    "sortOrder": 1,
+    "sessionFormat": "SERBEST",
+    "isActive": true
+  },
+  {
+    "serviceId": "reformer",
+    "name": "12 Ders Reformer Grup",
+    "type": "DERS_PAKETI",
+    "price": 4800,
+    "sessionCount": 12,
+    "validityDays": 45,
+    "validityRequired": true,
+    "sessionFormat": "GRUP",
+    "isActive": true,
+    "sortOrder": 10,
+    "id": "vlztdavbr"
+  }
+]

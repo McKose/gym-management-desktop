@@ -1,0 +1,59 @@
+{
+  "name": "gym-management-system-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "desktop/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run next:dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "next:dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "lucide-react": "^0.562.0",
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.23",
+    "concurrently": "^8.2.2",
+    "electron": "^22.3.27",
+    "electron-builder": "^24.9.1",
+    "electron-is-dev": "^2.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.gym.management",
+    "productName": "Gym Management System",
+    "files": [
+      "out/**/*",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
