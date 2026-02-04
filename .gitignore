@@ -44,3 +44,9 @@ next-env.d.ts
 /dist
 *.zip
 test-electron.js
+
+# local data
+/data
+/temp_bin
+*.exe
+

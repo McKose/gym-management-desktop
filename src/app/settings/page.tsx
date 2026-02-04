@@ -1,15 +1,16 @@
 "use client";
 
-import { useGym } from "@/context/GymContext";
-import { useState } from "react";
-import { Lock, Key, Percent, DollarSign, Plus, Trash2, Save, CreditCard, Package as PackageIcon, Info } from "lucide-react";
+import { useGym, Role, Permission } from "@/context/GymContext";
+import { useState, useEffect } from "react";
+import { Lock, Key, Percent, DollarSign, Plus, Trash2, Save, CreditCard, Package as PackageIcon, Info, ShieldCheck, RefreshCw, Download, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function SettingsPage() {
     const {
         hasPermission,
         staff, updateStaff,
         commissionRates, updateCommissionRate, addCommissionRate, deleteCommissionRate,
-        coupons, addCoupon, deleteCoupon
+        coupons, addCoupon, deleteCoupon,
+        rolePermissions, updateRolePermissions
     } = useGym();
 
     // Permissions
@@ -26,6 +27,56 @@ export default function SettingsPage() {
 
     // Password Editing State
     const [passwordEdits, setPasswordEdits] = useState<Record<string, string>>({});
+
+    // Update States
+    const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error'>('idle');
+    const [updateInfo, setUpdateInfo] = useState<any>(null);
+    const [updateProgress, setUpdateProgress] = useState(0);
+    const [updateError, setUpdateError] = useState("");
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).electron) {
+            const electron = (window as any).electron;
+
+            electron.onUpdateStatus((status: any, info: any) => {
+                setUpdateStatus(status);
+                if (info) setUpdateInfo(info);
+                if (status === 'error') setUpdateError(info);
+            });
+
+            electron.onUpdateProgress((percent: number) => {
+                setUpdateProgress(percent);
+            });
+        }
+    }, []);
+
+    const handleCheckUpdate = async () => {
+        if (typeof window !== 'undefined' && (window as any).electron) {
+            setUpdateStatus('checking');
+            const res = await (window as any).electron.checkForUpdate();
+            if (res?.error) {
+                setUpdateStatus('error');
+                setUpdateError(res.error);
+            }
+        }
+    };
+
+    const handleStartDownload = async () => {
+        if (typeof window !== 'undefined' && (window as any).electron) {
+            setUpdateStatus('downloading');
+            const res = await (window as any).electron.startDownload();
+            if (res?.error) {
+                setUpdateStatus('error');
+                setUpdateError(res.error);
+            }
+        }
+    };
+
+    const handleInstallUpdate = () => {
+        if (typeof window !== 'undefined' && (window as any).electron) {
+            (window as any).electron.quitAndInstall();
+        }
+    };
 
     if (!canView) {
         return (
@@ -46,6 +97,10 @@ export default function SettingsPage() {
             });
             alert("Şifre güncellendi.");
         }
+    };
+
+    const handlePasswordChange = (id: string, value: string) => {
+        setPasswordEdits(prev => ({ ...prev, [id]: value }));
     };
 
     const handleAddCommission = (e: React.FormEvent) => {
@@ -91,6 +146,79 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-8">
+                {/* 1. Role Permissions (Admin Only) */}
+                {canManage && (
+                    <section className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                                <ShieldCheck size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-black">Rol Yetkileri</h2>
+                                <p className="text-xs text-zinc-500">Hangi rolün nerelere erişebileceğini yapılandırın.</p>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto border border-zinc-200 rounded-lg">
+                            <table className="w-full text-xs text-left">
+                                <thead className="bg-zinc-50 text-zinc-500 font-bold border-b border-zinc-200">
+                                    <tr>
+                                        <th className="px-4 py-3 sticky left-0 bg-zinc-50 border-r border-zinc-200">İzin Adı</th>
+                                        {(['manager', 'trainer', 'physio', 'dietitian'] as Role[]).map(role => (
+                                            <th key={role} className="px-4 py-3 text-center capitalize">{role}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100">
+                                    {[
+                                        { id: 'view_stats', label: 'İstatistikleri Gör' },
+                                        { id: 'view_packages', label: 'Paketleri Gör' },
+                                        { id: 'manage_packages', label: 'Paket Yönetimi' },
+                                        { id: 'view_staff', label: 'Personel Listesi' },
+                                        { id: 'manage_staff', label: 'Personel Yönetimi' },
+                                        { id: 'view_financials', label: 'Finansal Veriler' },
+                                        { id: 'manage_financials', label: 'Finans Yönetimi' },
+                                        { id: 'view_member', label: 'Üye Listesi' },
+                                        { id: 'add_member', label: 'Üye Ekleme' },
+                                        { id: 'edit_member', label: 'Üye Düzenleme' },
+                                        { id: 'delete_member', label: 'Üye Silme' },
+                                        { id: 'view_schedule', label: 'Randevu Takvimi' },
+                                        { id: 'add_appointment', label: 'Randevu Ekleme' },
+                                        { id: 'view_store', label: 'Mağaza / Satış' },
+                                        { id: 'view_settings', label: 'Ayarları Görüntüle' },
+                                        { id: 'manage_settings', label: 'Tam Sistem Yönetimi' },
+                                    ].map((perm) => (
+                                        <tr key={perm.id} className="hover:bg-zinc-50 transition-colors">
+                                            <td className="px-4 py-2 font-medium border-r border-zinc-100">{perm.label} (<code>{perm.id}</code>)</td>
+                                            {(['manager', 'trainer', 'physio', 'dietitian'] as Role[]).map(role => {
+                                                const hasPerm = rolePermissions[role]?.includes(perm.id as Permission);
+                                                return (
+                                                    <td key={role} className="px-4 py-2 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={hasPerm || false}
+                                                            onChange={(e) => {
+                                                                const currentPerms = rolePermissions[role] || [];
+                                                                let newPerms: Permission[];
+                                                                if (e.target.checked) {
+                                                                    newPerms = [...currentPerms, perm.id as Permission];
+                                                                } else {
+                                                                    newPerms = currentPerms.filter((p: Permission) => p !== perm.id);
+                                                                }
+                                                                updateRolePermissions(role, newPerms);
+                                                            }}
+                                                            className="w-4 h-4 rounded border-zinc-300 text-black focus:ring-black"
+                                                        />
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                )}
 
                 {/* 2. Coupon Configuration (New User Request) */}
                 <section className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
@@ -327,6 +455,90 @@ export default function SettingsPage() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </section>
+
+                {/* 4. Software Update */}
+                <section className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                            <RefreshCw size={20} className={updateStatus === 'checking' ? 'animate-spin' : ''} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-black">Yazılım Güncelleme</h2>
+                            <p className="text-xs text-zinc-500">Uygulama versiyonunu kontrol edin ve güncelleyin.</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-zinc-50 rounded-lg p-6 border border-zinc-100">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="space-y-1">
+                                <div className="text-sm font-bold text-zinc-800">
+                                    Mevcut Versiyon: <span className="text-zinc-500 font-mono">v1.0.8</span>
+                                </div>
+                                <div className="text-xs text-zinc-400">
+                                    {updateStatus === 'idle' && "Güncelleştirmeleri kontrol etmek için butona tıklayın."}
+                                    {updateStatus === 'checking' && "Sunucu ile bağlantı kuruluyor..."}
+                                    {updateStatus === 'not-available' && "Tebrikler! En güncel sürümü kullanıyorsunuz."}
+                                    {updateStatus === 'available' && `Yeni sürüm mevcut: v${updateInfo?.version || '?'}`}
+                                    {updateStatus === 'downloading' && `İndiriliyor: %${Math.round(updateProgress)}`}
+                                    {updateStatus === 'ready' && "Güncelleme hazır! Kurulum için yeniden başlatın."}
+                                    {updateStatus === 'error' && <span className="text-red-500 font-medium">{updateError || "Bir hata oluştu."}</span>}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                {updateStatus === 'idle' || updateStatus === 'not-available' || updateStatus === 'error' ? (
+                                    <button
+                                        onClick={handleCheckUpdate}
+                                        className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors"
+                                    >
+                                        <RefreshCw size={16} /> Güncellemeleri Denetle
+                                    </button>
+                                ) : null}
+
+                                {updateStatus === 'available' && (
+                                    <button
+                                        onClick={handleStartDownload}
+                                        className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors"
+                                    >
+                                        <Download size={16} /> Şimdi İndir
+                                    </button>
+                                )}
+
+                                {updateStatus === 'ready' && (
+                                    <button
+                                        onClick={handleInstallUpdate}
+                                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors"
+                                    >
+                                        <Save size={16} /> Şimdi Kur ve Yeniden Başlat
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {updateStatus === 'downloading' && (
+                            <div className="mt-6">
+                                <div className="h-2 w-full bg-zinc-200 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-blue-600 transition-all duration-300"
+                                        style={{ width: `${updateProgress}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {updateStatus === 'not-available' && (
+                            <div className="mt-4 flex items-center gap-2 text-emerald-600 text-xs font-bold">
+                                <CheckCircle2 size={14} /> En güncel versiyon yüklü.
+                            </div>
+                        )}
+
+                        {updateStatus === 'error' && (
+                            <div className="mt-4 flex items-center gap-2 text-red-500 text-xs font-bold">
+                                <AlertCircle size={14} /> Güncelleme kontrolü başarısız oldu.
+                            </div>
+                        )}
                     </div>
                 </section>
             </div >

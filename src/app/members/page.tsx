@@ -99,7 +99,20 @@ export default function MembersPage() {
     };
 
     // Derived Price for Current Selection
-    const currentPrice = calculatePrice(selectedPackageId, paymentType, installments);
+    const calculatedPrice = calculatePrice(selectedPackageId, paymentType, installments);
+
+    // Manual Price Override State
+    const [finalPrice, setFinalPrice] = useState<number | "">("");
+
+    // Sync final price with calculated price when package/payment changes, 
+    // BUT only if user hasn't typed a custom override? 
+    // Better: Allow users to click a "Reset" or just default it.
+    // Strategy: We'll default finalPrice to calculatedPrice whenever calculatedPrice changes.
+    useEffect(() => {
+        setFinalPrice(calculatedPrice);
+    }, [calculatedPrice]);
+
+    const currentPrice = typeof finalPrice === 'number' ? finalPrice : calculatedPrice;
 
     const handleExport = () => {
         const data = members.map(m => ({
@@ -593,7 +606,16 @@ export default function MembersPage() {
 
                         <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 flex justify-between items-center">
                             <span className="text-sm font-medium text-zinc-500">Toplam Tutar:</span>
-                            <span className="text-xl font-bold">{Math.round(currentPrice)} TL</span>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    value={finalPrice}
+                                    placeholder={Math.round(calculatedPrice).toString()}
+                                    onChange={(e) => setFinalPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                    className="w-24 text-right p-1 border border-zinc-300 rounded font-bold text-xl bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                />
+                                <span className="text-xl font-bold">TL</span>
+                            </div>
                         </div>
                     </div>
 
@@ -703,7 +725,16 @@ export default function MembersPage() {
 
                         <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 flex justify-between items-center">
                             <span className="text-sm font-medium text-zinc-500">Toplam Tutar:</span>
-                            <span className="text-xl font-bold">{Math.round(currentPrice)} TL</span>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    value={finalPrice}
+                                    placeholder={Math.round(calculatedPrice).toString()}
+                                    onChange={(e) => setFinalPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                    className="w-24 text-right p-1 border border-zinc-300 rounded font-bold text-xl bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                />
+                                <span className="text-xl font-bold">TL</span>
+                            </div>
                         </div>
                     </div>
 

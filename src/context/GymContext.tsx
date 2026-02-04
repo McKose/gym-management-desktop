@@ -265,6 +265,8 @@ export interface GymContextType {
     currentUser: Staff | null;
     setCurrentUser: (user: Staff | null) => void;
     hasPermission: (perm: Permission) => boolean;
+    rolePermissions: Record<Role, Permission[]>;
+    updateRolePermissions: (role: Role, permissions: Permission[]) => void;
 
     // Members
     members: Member[];
@@ -307,6 +309,9 @@ export interface GymContextType {
     // Groups
     groups: Group[];
     joinGroup: (memberIds: string[], schedule: GroupSchedule, time: string, branch: Branch) => void;
+
+    // Loading State
+    isLoaded: boolean;
 }
 
 const GymContext = createContext<GymContextType | undefined>(undefined);
@@ -368,6 +373,9 @@ export function GymProvider({ children }: { children: ReactNode }) {
         { id: '2', code: 'YAZINDIRIMI', discountRate: 20, isActive: true }
     ]);
 
+    // Permission State (Initialized with Default)
+    const [rolePermissions, setRolePermissions] = useState<Record<Role, Permission[]>>(ROLE_PERMISSIONS);
+
     // Group State
     const [groups, setGroups] = useState<Group[]>([]);
 
@@ -389,8 +397,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
     // Helper for API storage
     const saveToStorage = async (key: string, data: any) => {
         try {
-            if (typeof window !== 'undefined' && window.electron) {
-                await window.electron.saveData(key, data);
+            if (typeof window !== 'undefined' && (window as any).electron) {
+                await (window as any).electron.saveData(key, data);
             } else {
                 await fetch('/api/storage', {
                     method: 'POST',
@@ -407,8 +415,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
         const loadData = async () => {
             const fetchData = async (key: string) => {
                 try {
-                    if (typeof window !== 'undefined' && window.electron) {
-                        return await window.electron.readData(key);
+                    if (typeof window !== 'undefined' && (window as any).electron) {
+                        return await (window as any).electron.readData(key);
                     } else {
                         const res = await fetch(`/api/storage?key=${key}`);
                         const json = await res.json();
@@ -432,7 +440,17 @@ export function GymProvider({ children }: { children: ReactNode }) {
             const savedProductSales = await fetchData("gym_product_sales");
             const savedGroups = await fetchData("gym_groups");
             const savedCoupons = await fetchData("gym_coupons"); // Added missing coupon load
+            const savedPermissions = await fetchData("gym_role_permissions");
+            const savedUser = await fetchData("gym_current_user");
 
+            if (savedUser) {
+                setCurrentUser(savedUser);
+            }
+
+            if (savedPermissions) {
+                // Clean/merge with existing definition just in case logic changes, but simply setting it overrides.
+                setRolePermissions(savedPermissions);
+            }
 
             if (savedPackages) {
                 setPackages(savedPackages);
@@ -507,8 +525,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
     useEffect(() => { if (isLoaded) saveToStorage("gym_product_sales", productSales); }, [productSales, isLoaded]);
     useEffect(() => { if (isLoaded) saveToStorage("gym_groups", groups); }, [groups, isLoaded]);
     useEffect(() => { if (isLoaded) saveToStorage("gym_coupons", coupons); }, [coupons, isLoaded]); // Added
+    useEffect(() => { if (isLoaded) saveToStorage("gym_role_permissions", rolePermissions); }, [rolePermissions, isLoaded]); // Added
     // Services v2
     useEffect(() => { if (isLoaded) saveToStorage("gym_services_v2", services); }, [services, isLoaded]);
+    // Current User Persistence
+    useEffect(() => { if (isLoaded) saveToStorage("gym_current_user", currentUser); }, [currentUser, isLoaded]);
 
     const addPackage = (pkg: Omit<Package, "id">) => setPackages(prev => [...prev, { ...pkg, id: Math.random().toString(36).substr(2, 9) }]);
     const updatePackage = (id: string, pkg: Partial<Package>) => setPackages(prev => prev.map(p => p.id === id ? { ...p, ...pkg } : p));
@@ -517,6 +538,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
     const addStaff = (s: Omit<Staff, "id">) => setStaff(prev => [...prev, { ...s, id: Math.random().toString(36).substr(2, 9) }]);
     const updateStaff = (id: string, s: Partial<Staff>) => setStaff(prev => prev.map(staff => staff.id === id ? { ...staff, ...s } : staff));
     const deleteStaff = (id: string) => setStaff(prev => prev.filter(s => s.id !== id));
+
+    // Permission Updater
+    const updateRolePermissions = (role: Role, permissions: Permission[]) => {
+        setRolePermissions(prev => ({
+            ...prev,
+            [role]: permissions
+        }));
+    };
 
     const addMember = (m: Omit<Member, "id" | "status" | "history">): string => {
         const id = Math.random().toString(36).substr(2, 9);
@@ -683,7 +712,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
 
     const hasPermission = (perm: Permission): boolean => {
         if (!currentUser) return false;
-        const perms = ROLE_PERMISSIONS[currentUser.role];
+        // Use State instead of Constant
+        const perms = rolePermissions[currentUser.role];
         return perms?.includes(perm) || false;
     };
 
@@ -822,7 +852,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
 
             commissionRates, addCommissionRate, updateCommissionRate, deleteCommissionRate,
             staff, addStaff, deleteStaff, updateStaff, trainers,
-            currentUser, setCurrentUser, hasPermission,
+            currentUser, setCurrentUser, hasPermission, rolePermissions, updateRolePermissions,
             members, addMember, updateMember, deleteMember, renewMembership,
             appointments, addAppointment, deleteAppointment, cancelAppointment, updateAppointment,
             expenses, addExpense, deleteExpense,
@@ -830,7 +860,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
             products, addProduct, updateProduct, deleteProduct,
             productSales, addProductSale,
             coupons, addCoupon, updateCoupon, deleteCoupon,
-            groups, joinGroup
+            groups, joinGroup,
+            isLoaded
         }}>
             {children}
         </GymContext.Provider>

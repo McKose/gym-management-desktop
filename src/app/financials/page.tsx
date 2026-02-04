@@ -105,6 +105,16 @@ export default function FinancialsPage() {
         } as any);
     };
 
+    // --- HELPERS ---
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('tr-TR', {
+            style: 'currency',
+            currency: 'TRY',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    };
+
     // --- CALCULATIONS ---
 
     // 1. Income (Gelirler)
@@ -230,6 +240,34 @@ export default function FinancialsPage() {
             detail: staffEarnings_
         };
     }, [staff, appointments, members, packages, selectedDate]);
+
+    // --- OVERDUE PAYMENTS ---
+    const overdueData = useMemo(() => {
+        const currentYearMonth = selectedDate; // YYYY-MM
+
+        // Overdue Memberships: pending and started BEFORE current filtered month
+        const overdueMembers = members.filter(m =>
+            m.paymentStatus === "pending" &&
+            m.startDate &&
+            m.startDate.slice(0, 7) < currentYearMonth
+        );
+
+        // Overdue Expenses: pending and date BEFORE current filtered month
+        const overdueExpenses = expenses.filter(e =>
+            e.status === "pending" &&
+            e.date &&
+            e.date.slice(0, 7) < currentYearMonth
+        );
+
+        const totalOverdue = overdueMembers.reduce((sum, m) => sum + (m.pricePaid || 0), 0) +
+            overdueExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+        return {
+            members: overdueMembers,
+            expenses: overdueExpenses,
+            total: totalOverdue
+        };
+    }, [members, expenses, selectedDate]);
 
     // 4. Taxes (KDV + Stopaj + Kurumlar Vergisi)
     const taxCalc = useMemo(() => {
@@ -472,6 +510,49 @@ export default function FinancialsPage() {
                 </Modal>
             )}
 
+            {/* Edit Expense Modal */}
+            {isEditExpenseModalOpen && (
+                <Modal
+                    isOpen={isEditExpenseModalOpen}
+                    onClose={() => setIsEditExpenseModalOpen(false)}
+                    title="Gider Düzenle"
+                    width="450px"
+                >
+                    <form onSubmit={handleEditExpenseSubmit} className="space-y-3">
+                        <input type="text" placeholder="Gider Adı" required value={editExpenseForm.title} onChange={e => setEditExpenseForm({ ...editExpenseForm, title: e.target.value })} className="w-full p-2 border rounded" />
+
+                        {(editExpenseForm.category !== 'tax' && editExpenseForm.category !== 'salary') && (
+                            <input type="number" placeholder="Tutar" required value={editExpenseForm.amount} onChange={e => setEditExpenseForm({ ...editExpenseForm, amount: Number(e.target.value) })} className="w-full p-2 border rounded" />
+                        )}
+
+                        <select value={editExpenseForm.category} onChange={e => setEditExpenseForm({ ...editExpenseForm, category: e.target.value })} className="w-full p-2 border rounded">
+                            <option value="other">Diğer / Genel</option>
+                            <option value="stock_purchase">Ürün/Stok Alımı</option>
+                            <option value="consumable">Sarf Malzeme</option>
+                            <option value="bills">Fatura</option>
+                        </select>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-[10px] text-zinc-400 font-bold uppercase">Toplam Taksit</label>
+                                <input type="number" min="1" required value={editExpenseForm.installments} onChange={e => setEditExpenseForm({ ...editExpenseForm, installments: Number(e.target.value) })} className="w-full p-2 border rounded" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-zinc-400 font-bold uppercase">Ödenmiş</label>
+                                <input type="number" min="0" required value={editExpenseForm.paidInstallments} onChange={e => setEditExpenseForm({ ...editExpenseForm, paidInstallments: Number(e.target.value) })} className="w-full p-2 border rounded" />
+                            </div>
+                        </div>
+
+                        <input type="date" required value={editExpenseForm.date} onChange={e => setEditExpenseForm({ ...editExpenseForm, date: e.target.value })} className="w-full p-2 border rounded" />
+
+                        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">
+                            Güncelle
+                        </button>
+                    </form>
+                </Modal>
+            )}
+
+
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex justify-between items-end mb-8">
@@ -511,7 +592,7 @@ export default function FinancialsPage() {
                             <div className="relative z-10">
                                 <h2 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">{selectedDate} Dağıtılabilir Net Kar</h2>
                                 <div className={`text-5xl font-bold tracking-tight mb-6 ${finalNetProfit < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                    {finalNetProfit.toLocaleString('tr-TR')} ₺
+                                    {formatCurrency(finalNetProfit)}
                                 </div>
 
                                 {/* High Level Breakdown */}
@@ -545,7 +626,7 @@ export default function FinancialsPage() {
                                 {/* Income */}
                                 <div className="flex justify-between font-bold">
                                     <span>TOPLAM GELİR</span>
-                                    <span>{totalIncome.toLocaleString('tr-TR')} ₺</span>
+                                    <span>{formatCurrency(totalIncome)}</span>
                                 </div>
                                 <div className="pl-4 text-xs text-zinc-500 space-y-1">
                                     <div className="flex justify-between"><span>Üyelik Satışları</span><span>{monthlyMembershipIncome.toLocaleString('tr-TR')} ₺</span></div>
@@ -578,9 +659,55 @@ export default function FinancialsPage() {
                                 {/* Final */}
                                 <div className="flex justify-between font-bold text-lg">
                                     <span>NET KAR</span>
-                                    <span className={finalNetProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}>{finalNetProfit.toLocaleString('tr-TR')} ₺</span>
+                                    <span className={finalNetProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}>{formatCurrency(finalNetProfit)}</span>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* OVERDUE PAYMENTS SECTION */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl overflow-hidden shadow-sm">
+                            <div className="p-4 border-b border-amber-200 bg-amber-100/50 flex justify-between items-center">
+                                <h3 className="font-bold text-sm text-amber-900 uppercase flex items-center gap-2">
+                                    <Calendar size={18} /> Gecikmiş Ödemeler
+                                </h3>
+                                <div className="text-amber-900 font-bold">
+                                    {formatCurrency(overdueData.total)}
+                                </div>
+                            </div>
+                            <div className="divide-y divide-amber-100 max-h-[300px] overflow-y-auto">
+                                {overdueData.members.map(m => (
+                                    <div key={m.id} className="p-3 px-4 flex justify-between items-center hover:bg-amber-100/30 transition-colors">
+                                        <div>
+                                            <div className="font-bold text-xs text-amber-900">{m.fullName}</div>
+                                            <div className="text-[10px] text-amber-700 uppercase tracking-tighter">Üyelik • {m.startDate}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold text-amber-600 text-xs">{formatCurrency(m.pricePaid || 0)}</div>
+                                            <div className="text-[9px] text-amber-500 italic">Tahsilat Bekliyor</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {overdueData.expenses.map(e => (
+                                    <div key={e.id} className="p-3 px-4 flex justify-between items-center hover:bg-amber-100/30 transition-colors">
+                                        <div>
+                                            <div className="font-bold text-xs text-amber-900">{e.title}</div>
+                                            <div className="text-[10px] text-amber-700 uppercase tracking-tighter">Gider • {e.date}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold text-red-600 text-xs">-{formatCurrency(e.amount)}</div>
+                                            <div className="text-[9px] text-amber-500 italic">Ödeme Bekliyor</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {overdueData.members.length === 0 && overdueData.expenses.length === 0 && (
+                                    <div className="p-8 text-center text-amber-500 text-xs italic">Gecikmiş ödeme bulunmuyor.</div>
+                                )}
+                            </div>
+                            {(overdueData.members.length > 0 || overdueData.expenses.length > 0) && (
+                                <div className="p-3 bg-amber-100/50 border-t border-amber-200 text-center">
+                                    <span className="text-[11px] font-bold text-amber-800 uppercase">Toplam Gecikmiş Alacak/Borç: {formatCurrency(overdueData.total)}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Staff Earnings Table */}
@@ -603,14 +730,14 @@ export default function FinancialsPage() {
                                                 <div className="text-[10px] text-zinc-400 capitalize">{row.model}</div>
                                             </td>
                                             <td className="p-2 text-right text-zinc-600">
-                                                {(row.salary + row.lessonEarning).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                                                {formatCurrency(row.salary + row.lessonEarning)}
                                             </td>
                                             <td className="p-2 text-right text-emerald-600 font-medium">
-                                                {row.profitShare > 0 ? row.profitShare.toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' ₺' : '-'}
+                                                {row.profitShare > 0 ? formatCurrency(row.profitShare) : '-'}
                                                 {row.profitShareRate > 0 && <span className="text-[9px] text-zinc-400 block">(%{row.profitShareRate})</span>}
                                             </td>
                                             <td className="p-2 text-right font-bold text-black">
-                                                {row.totalEarnings.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                                                {formatCurrency(row.totalEarnings)}
                                             </td>
                                         </tr>
                                     ))}
@@ -643,7 +770,7 @@ export default function FinancialsPage() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className="text-right">
-                                                <div className="font-bold text-sm">{exp.amount} ₺</div>
+                                                <div className="font-bold text-sm">{formatCurrency(exp.amount)}</div>
                                                 <div className="text-[10px] text-zinc-400 italic">Toplam Tutar</div>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -675,7 +802,7 @@ export default function FinancialsPage() {
                         <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
                             <div className="p-4 bg-zinc-50 border-b border-zinc-200 flex justify-between items-center">
                                 <h3 className="font-bold text-black text-sm uppercase">Tüm Giderler (Aylık)</h3>
-                                <span className="text-xs font-bold text-red-500">-{totalOperatingExpenses.toLocaleString('tr-TR')} ₺</span>
+                                <span className="text-xs font-bold text-red-500">-{formatCurrency(totalOperatingExpenses)}</span>
                             </div>
                             <div className="divide-y divide-zinc-100 max-h-[400px] overflow-y-auto">
                                 {[...currentMonthExpenses].map((e: any) => (
@@ -685,7 +812,7 @@ export default function FinancialsPage() {
                                             <div className="text-[10px] text-zinc-400 uppercase tracking-tighter">{e.dayOfMonth ? 'Sabit Gider' : e.category}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-red-500 text-xs text-right">-{e.amount} ₺</span>
+                                            <span className="font-bold text-red-500 text-xs text-right">-{formatCurrency(e.amount)}</span>
                                             {e.category && (
                                                 <button onClick={() => deleteExpense(e.id)} className="p-1 hover:bg-red-50 rounded text-zinc-300 hover:text-red-500 transition-colors">
                                                     <Trash2 size={12} />
@@ -720,7 +847,7 @@ export default function FinancialsPage() {
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
                                                 {e.type === 'fixed' ? (
-                                                    <div className="font-bold text-sm text-red-500">-{e.amount} ₺</div>
+                                                    <div className="font-bold text-sm text-red-500">-{formatCurrency(e.amount)}</div>
                                                 ) : (
                                                     <div className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Ödeme Bekliyor</div>
                                                 )}
@@ -756,6 +883,6 @@ export default function FinancialsPage() {
                 </div>
 
             </div>
-        </div>
+        </div >
     );
 }

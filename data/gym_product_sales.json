@@ -12,5 +12,19 @@
     "totalAmount": 106.05,
     "staffId": "admin1",
     "id": "mm4m2q9fa"
+  },
+  {
+    "date": "2026-02-02T20:01:47.597Z",
+    "items": [
+      {
+        "productId": "de0kiejm2",
+        "name": "MultiPowerr BCAA",
+        "quantity": 3,
+        "priceAtSale": 4950
+      }
+    ],
+    "totalAmount": 18711,
+    "staffId": "admin1",
+    "id": "he95t3e7a"
   }
 ]

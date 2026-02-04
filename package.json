@@ -1,6 +1,6 @@
 {
   "name": "gym-management-system-desktop",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "private": true,
   "main": "desktop/main.js",
   "scripts": {
@@ -9,9 +9,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "prod": "next build && electron ."
   },
   "dependencies": {
+    "electron-updater": "^6.7.3",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "react": "19.2.3",
@@ -24,7 +26,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.23",
     "concurrently": "^8.2.2",
-    "electron": "^22.3.27",
+    "electron": "^33.2.1",
     "electron-builder": "^24.9.1",
     "electron-is-dev": "^2.0.0",
     "eslint": "^9",
@@ -34,9 +36,21 @@
     "typescript": "^5",
     "wait-on": "^7.2.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/McKose/gym-management-desktop.git"
+  },
   "build": {
     "appId": "com.gym.management",
     "productName": "Gym Management System",
+    "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "McKose",
+        "repo": "gym-management-desktop"
+      }
+    ],
     "files": [
       "out/**/*",
       "desktop/**/*",

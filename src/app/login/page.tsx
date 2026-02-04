@@ -1,18 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth, Role } from "@/context/AuthContext";
+import { useGym, Role } from "@/context/GymContext";
 import { Lock, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-    const { login } = useAuth();
+    const { setCurrentUser, staff } = useGym();
     const [username, setUsername] = useState("");
     const [role, setRole] = useState<Role>("manager");
+    const router = useRouter();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Logic for demo: password check could be here
-        login(username, role);
+
+        // Find user by name and role (Simple simulation)
+        // In reality, we'd check ID or handle explicit login. 
+        // For now, let's just find the first user matching the role or create a dummy session if specific user entry is desired.
+
+        // Let's filter by Role as the UI suggests simulating a "Role Login". 
+        // We'll pick the first staff member with that role.
+        const user = staff.find(s => s.role === role);
+
+        if (user) {
+            setCurrentUser(user);
+            router.push("/");
+        } else {
+            alert("Bu rolde kullanıcı bulunamadı!");
+        }
     };
 
     return (
@@ -27,56 +42,23 @@ export default function LoginPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Temporarily simplified login to just Role Selection since we are moving away from username match in simulation */}
                     <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-1">Kullanıcı Adı</label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-3 text-zinc-500" size={20} />
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={e => setUsername(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-indigo-500"
-                                placeholder="Örn: admin"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-1">Rol (Simülasyon)</label>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Giriş Yapılacak Rol</label>
                         <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setRole("manager")}
-                                className={`py-3 rounded-lg border transition-all ${role === "manager"
+                            {(['manager', 'trainer', 'admin', 'dietitian'] as Role[]).map(r => (
+                                <button
+                                    key={r}
+                                    type="button"
+                                    onClick={() => setRole(r)}
+                                    className={`py-3 rounded-lg border transition-all capitalize ${role === r
                                         ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
                                         : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:border-zinc-500"
-                                    }`}
-                            >
-                                Yönetici
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setRole("trainer")}
-                                className={`py-3 rounded-lg border transition-all ${role === "trainer"
-                                        ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
-                                        : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:border-zinc-500"
-                                    }`}
-                            >
-                                Eğitmen
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-1">Şifre</label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-3 text-zinc-500" size={20} />
-                            <input
-                                type="password"
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-indigo-500"
-                                placeholder="••••••"
-                            />
+                                        }`}
+                                >
+                                    {r}
+                                </button>
+                            ))}
                         </div>
                     </div>
 

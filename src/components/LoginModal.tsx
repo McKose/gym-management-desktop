@@ -106,7 +106,10 @@ export default function LoginModal({ isOpen, onLogin, targetUser, onCancel }: Lo
                         <input
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                console.log('Input Change:', e.target.value);
+                                setPassword(e.target.value);
+                            }}
                             className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-black text-sm focus:outline-none focus:border-black transition-colors"
                             placeholder="******"
                             autoFocus

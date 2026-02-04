@@ -7,5 +7,14 @@
     "cost": 5,
     "taxRate": 1,
     "id": "5e39n6jqg"
+  },
+  {
+    "name": "MultiPowerr BCAA",
+    "category": "supplement",
+    "price": 4950,
+    "stock": 97,
+    "cost": 3000,
+    "taxRate": 20,
+    "id": "de0kiejm2"
   }
 ]

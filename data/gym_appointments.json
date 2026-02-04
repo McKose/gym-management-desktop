@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "memberId": "sac6mv9zu",
+    "trainerId": "trainer1",
+    "date": "2026-02-03",
+    "time": "09:00",
+    "type": "fitness",
+    "description": "gdxktgchfvkgyyvfkyckfygvkv",
+    "id": "we37h4t7h",
+    "status": "cancelled"
+  },
+  {
+    "memberId": "sac6mv9zu",
+    "trainerId": "physio1",
+    "date": "2026-02-02",
+    "time": "09:00",
+    "type": "pilates",
+    "description": "",
+    "id": "k6y54o4i4",
+    "status": "scheduled"
+  }
+]

@@ -1,24 +1,24 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useGym } from "@/context/GymContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
-    const { user } = useAuth();
+    const { currentUser } = useGym();
     const router = useRouter();
 
     useEffect(() => {
-        if (!user) {
+        if (!currentUser) {
             router.push("/login");
-        } else if (allowedRoles && !allowedRoles.includes(user.role)) {
+        } else if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
             // If user logic is needed, redirect or show unauthorized
         }
-    }, [user, router, allowedRoles]);
+    }, [currentUser, router, allowedRoles]);
 
-    if (!user) return null;
+    if (!currentUser) return null;
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-center">
                 <h1 className="text-3xl font-bold text-red-500 mb-4">Yetkisiz Erişim</h1>

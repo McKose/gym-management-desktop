@@ -9,21 +9,23 @@ import LoginModal from "./LoginModal";
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const { currentUser, setCurrentUser, staff, hasPermission } = useGym();
+    const { currentUser, setCurrentUser, staff, hasPermission, isLoaded } = useGym();
 
     // Login / Role Switch State
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [switchTarget, setSwitchTarget] = useState<Staff | null>(null);
 
-    // Force Login on Mount if no user
+    // Force Login on Mount if no user (Wait for load)
     useEffect(() => {
+        if (!isLoaded) return; // Wait for persistence
+
         if (!currentUser) {
             setIsLoginModalOpen(true);
         } else {
             // If user is logged in, close modal (unless switching)
             if (!switchTarget) setIsLoginModalOpen(false);
         }
-    }, [currentUser, switchTarget]);
+    }, [currentUser, switchTarget, isLoaded]);
 
     const handleSwitchRequest = (target: Staff) => {
         setSwitchTarget(target);
@@ -110,18 +112,20 @@ export default function Sidebar() {
                         </button>
 
                         {/* Dropdown */}
-                        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-zinc-200 rounded-lg shadow-xl p-2 hidden group-hover:block z-[60]">
-                            <p className="text-[10px] uppercase text-zinc-400 font-bold px-2 py-1">Kullanıcı Seç</p>
-                            {staff.map(s => (
-                                <button
-                                    key={s.id}
-                                    onClick={() => handleSwitchRequest(s)}
-                                    className={`w-full text-left px-2 py-2 rounded text-xs flex items-center justify-between ${currentUser?.id === s.id ? "bg-indigo-50 text-indigo-700" : "hover:bg-zinc-50 text-zinc-700"}`}
-                                >
-                                    <span>{s.name}</span>
-                                    <span className="text-[10px] opacity-70 border border-current px-1 rounded capitalize">{s.role}</span>
-                                </button>
-                            ))}
+                        <div className="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-[60]">
+                            <div className="bg-white border border-zinc-200 rounded-lg shadow-xl p-2">
+                                <p className="text-[10px] uppercase text-zinc-400 font-bold px-2 py-1">Kullanıcı Seç</p>
+                                {staff.map(s => (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => handleSwitchRequest(s)}
+                                        className={`w-full text-left px-2 py-2 rounded text-xs flex items-center justify-between ${currentUser?.id === s.id ? "bg-indigo-50 text-indigo-700" : "hover:bg-zinc-50 text-zinc-700"}`}
+                                    >
+                                        <span>{s.name}</span>
+                                        <span className="text-[10px] opacity-70 border border-current px-1 rounded capitalize">{s.role}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
