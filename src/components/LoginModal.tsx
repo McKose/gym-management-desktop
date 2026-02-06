@@ -19,22 +19,24 @@ export default function LoginModal({ isOpen, onLogin, targetUser, onCancel }: Lo
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
-            setPassword("");
-            setError("");
-            if (targetUser) {
-                setSelectedUserId(targetUser.id);
-            } else if (!selectedUserId && staff.length > 0) {
-                // Default to first user if not set
-                setSelectedUserId(staff[0].id);
-            }
+            const timer = setTimeout(() => {
+                setPassword("");
+                setError("");
+                if (targetUser) {
+                    setSelectedUserId(targetUser.id);
+                } else if (!selectedUserId && staff.length > 0) {
+                    setSelectedUserId(staff[0].id);
+                }
+            }, 0);
+            return () => clearTimeout(timer);
         }
-    }, [isOpen, targetUser, staff]);
+    }, [isOpen, targetUser, staff, selectedUserId]);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        const userToVerify = staff.find(s => s.id === selectedUserId);
+        const userToVerify = staff.find((s: Staff) => s.id === selectedUserId);
 
         if (!userToVerify) {
             setError("Kullanıcı bulunamadı.");
@@ -75,7 +77,7 @@ export default function LoginModal({ isOpen, onLogin, targetUser, onCancel }: Lo
                                 onChange={(e) => setSelectedUserId(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-black text-sm focus:outline-none focus:border-black appearance-none"
                             >
-                                {staff.map(s => (
+                                {staff.map((s: Staff) => (
                                     <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
                                 ))}
                             </select>

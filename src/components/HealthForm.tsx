@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { HealthProfile } from '@/context/GymContext';
 import HealthBadge, { BranchSuitability } from './HealthBadge';
 
@@ -68,10 +68,10 @@ export default function HealthForm({ initialData, onChange, readOnly = false }: 
             <h4 className="text-xs font-bold text-zinc-500 uppercase mb-2 border-b border-zinc-100 pb-1">{title}</h4>
             <div className="grid grid-cols-2 gap-2">
                 {items.map(item => (
-                    <label key={item} className={`flex items-start gap-2 text-sm p-2 rounded-lg cursor-pointer transition-colors ${(profile[key] as string[]).includes(item)
+                    <label key={item} className={`flex items - start gap - 2 text - sm p - 2 rounded - lg cursor - pointer transition - colors ${(profile[key] as string[]).includes(item)
                         ? 'bg-red-50 border border-red-100 text-red-700'
                         : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600'
-                        }`}>
+                        } `}>
                         <input
                             type="checkbox"
                             className="mt-1"
@@ -102,7 +102,7 @@ export default function HealthForm({ initialData, onChange, readOnly = false }: 
             </div>
 
             {/* Form Fields */}
-            <div className={`space-y-1 ${readOnly ? 'opacity-75 pointer-events-none' : ''}`}>
+            <div className={`space - y - 1 ${readOnly ? 'opacity-75 pointer-events-none' : ''} `}>
                 {renderCategory("Kardiyovasküler (Kalp/Damar)", "cardio", CONDITIONS.cardio)}
                 {renderCategory("Omurga & Ortopedik", "ortho", CONDITIONS.ortho)}
                 {renderCategory("Metabolik & Endokrin", "metabolic", CONDITIONS.metabolic)}
@@ -110,7 +110,7 @@ export default function HealthForm({ initialData, onChange, readOnly = false }: 
                 {renderCategory("Özel Durumlar", "special", CONDITIONS.special)}
 
                 <div>
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase mb-2">Diğer / Açıklama</h4>
+                    <h3 className="text-zinc-500 font-bold text-[10px] uppercase mb-1 flex items-center gap-2">MUAYENE VE &quot;PAR-Q&quot; KATILIM BEYANI</h3>
                     <textarea
                         className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-sm focus:outline-none focus:border-black resize-none"
                         rows={3}
@@ -123,7 +123,7 @@ export default function HealthForm({ initialData, onChange, readOnly = false }: 
             </div>
 
             <div className="text-[10px] text-zinc-400 italic">
-                * Bu form bilgilendirme amaçlıdır. Hukuki sorumluluk kabul edilmez. Islak imzalı "Sağlık Beyan Formu" esastır.
+                * Bu form bilgilendirme amaçlıdır. Hukuki sorumluluk kabul edilmez. Islak imzalı &quot;Sağlık Beyan Formu&quot; esastır.
             </div>
         </div>
     );

@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { app, BrowserWindow, ipcMain, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -91,7 +92,7 @@ app.whenReady().then(() => {
             if (safePath.includes('?')) safePath = safePath.split('?')[0];
 
             let fullPath = path.join(serveDir, safePath);
-            let stat = null;
+            // let stat = null; // Removed unused stat variable
             let foundPath = null;
 
             // Strategy:
@@ -108,7 +109,7 @@ app.whenReady().then(() => {
                         stat = s;
                         foundPath = htmlPath;
                     }
-                } catch (e) { /* Not a .html file */ }
+                } catch { /* Not a .html file */ }
             }
 
             // Check 2: Try exact path if not found yet
@@ -127,9 +128,9 @@ app.whenReady().then(() => {
                                 stat = indexStat;
                                 foundPath = indexPath;
                             }
-                        } catch (e) { /* Directory exists but no index.html */ }
+                        } catch { /* Directory exists but no index.html */ }
                     }
-                } catch (e) { /* Path doesn't exist */ }
+                } catch { /* Path doesn't exist */ }
             }
 
             // Check 3: SPA Fallback (index.html) if still nothing found
@@ -138,7 +139,7 @@ app.whenReady().then(() => {
                 try {
                     stat = fs.statSync(rootIndex);
                     foundPath = rootIndex;
-                } catch (e) {
+                } catch {
                     res.statusCode = 404;
                     res.end('404 Not Found (and root index.html missing)');
                     return;
@@ -160,10 +161,8 @@ app.whenReady().then(() => {
         });
     }
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            // Re-creation logic ignored
-        }
+    ipcMain.on('open-external', (_, url) => {
+        shell.openExternal(url);
     });
 });
 
@@ -197,6 +196,32 @@ const DATA_DIR = isDev
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
 }
+
+ipcMain.on('clear-data', async () => {
+    const response = await dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        buttons: ['Evet', 'Hayır'],
+        defaultId: 1,
+        title: 'Verileri Temizle',
+        message: 'Tüm verileri temizlemek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+        detail: 'Bu işlem, kaydedilmiş tüm ayarları ve verileri silecektir.'
+    });
+
+    if (response.response === 0) { // 'Evet' button
+        try {
+            if (fs.existsSync(DATA_DIR)) {
+                await fsPromises.rm(DATA_DIR, { recursive: true, force: true });
+                fs.mkdirSync(DATA_DIR, { recursive: true }); // Recreate the directory
+                mainWindow?.webContents.send('data-cleared');
+                return { success: true };
+            }
+        } catch (error) {
+            console.error('IPC clear-data error:', error);
+            return { error: error.message };
+        }
+    }
+    return { success: false, message: 'Veri temizleme iptal edildi.' };
+});
 
 ipcMain.handle('read-data', async (event, key) => {
     try {

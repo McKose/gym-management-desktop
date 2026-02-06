@@ -262,9 +262,13 @@ export interface GymContextType {
     trainers: Staff[];
 
     // Auth
+    login: (role: "manager" | "receptionist" | "trainer") => void;
+    logout: () => void;
     currentUser: Staff | null;
     setCurrentUser: (user: Staff | null) => void;
-    hasPermission: (perm: Permission) => boolean;
+    hasPermission: (permission: string) => boolean;
+    selectedServiceId: string | null;
+    setSelectedServiceId: (id: string | null) => void;
     rolePermissions: Record<Role, Permission[]>;
     updateRolePermissions: (role: Role, permissions: Permission[]) => void;
 
@@ -391,14 +395,32 @@ export function GymProvider({ children }: { children: ReactNode }) {
     ]);
 
     const [currentUser, setCurrentUser] = useState<Staff | null>(null);
+    const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+
+    const login = (role: "manager" | "receptionist" | "trainer"): void => {
+        // Mock login
+        const mockUser: Staff = {
+            id: "admin-1",
+            name: "Yönetici",
+            role: role === "receptionist" ? "manager" : (role as Role),
+            gender: "male",
+            branches: ["fitness"],
+            commissionRate: 0
+        };
+        setCurrentUser(mockUser);
+    };
+
+    const logout = (): void => {
+        setCurrentUser(null);
+    };
     const [isLoaded, setIsLoaded] = useState(false);
 
     // Helper for API storage
     // Helper for API storage
-    const saveToStorage = async (key: string, data: any) => {
+    const saveToStorage = async (key: string, data: unknown) => {
         try {
-            if (typeof window !== 'undefined' && (window as any).electron) {
-                await (window as any).electron.saveData(key, data);
+            if (typeof window !== 'undefined' && (window as unknown as { electron: { saveData: (k: string, d: unknown) => Promise<void> } }).electron) {
+                await (window as unknown as { electron: { saveData: (k: string, d: unknown) => Promise<void> } }).electron.saveData(key, data);
             } else {
                 await fetch('/api/storage', {
                     method: 'POST',
@@ -415,8 +437,9 @@ export function GymProvider({ children }: { children: ReactNode }) {
         const loadData = async () => {
             const fetchData = async (key: string) => {
                 try {
-                    if (typeof window !== 'undefined' && (window as any).electron) {
-                        return await (window as any).electron.readData(key);
+                    if (typeof window !== 'undefined' && (window as unknown as { electron: { fetchData: (k: string) => Promise<{ data: unknown }> } }).electron) {
+                        const res = await (window as unknown as { electron: { fetchData: (k: string) => Promise<{ data: unknown }> } }).electron.fetchData(key);
+                        return res?.data;
                     } else {
                         const res = await fetch(`/api/storage?key=${key}`);
                         const json = await res.json();
@@ -462,7 +485,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
 
             if (savedStaff) {
                 // Ensure dates and arrays are correct if needed, but JSON usually handles strings fine
-                const loadedStaff = savedStaff.map((s: any) => ({
+                const loadedStaff = savedStaff.map((s: Staff) => ({
                     ...s,
                     branches: s.branches || [],
                     role: s.role || 'trainer',
@@ -551,7 +574,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
         const id = Math.random().toString(36).substr(2, 9);
         // Calculate End Date
         let endDate = undefined;
-        let status: 'active' | 'passive' = 'active';
+        const status: 'active' | 'passive' = 'active';
 
         if (m.activePackageId && m.startDate) {
             const pkg = packages.find(p => p.id === m.activePackageId);
@@ -710,11 +733,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setCommissionRates(prev => prev.filter(c => c.installments !== installments));
     };
 
-    const hasPermission = (perm: Permission): boolean => {
+    const hasPermission = (permission: string): boolean => {
         if (!currentUser) return false;
-        // Use State instead of Constant
-        const perms = rolePermissions[currentUser.role];
-        return perms?.includes(perm) || false;
+        const perms = rolePermissions[currentUser.role] || [];
+        return perms.includes(permission as Permission);
     };
 
     const trainers = staff.filter(s => ['trainer', 'physio', 'manager', 'admin'].includes(s.role));
@@ -752,7 +774,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
 
     const joinGroup = (memberIds: string[], schedule: GroupSchedule, time: string, branch: Branch) => {
         // 1. Find suitable group
-        let targetGroup = groups.find(g =>
+        const targetGroup = groups.find(g =>
             g.schedule === schedule &&
             g.time === time &&
             g.active &&
@@ -801,7 +823,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
         const endDate = new Date();
         endDate.setDate(today.getDate() + 30); // Generate for 1 month
 
-        let loopDate = new Date(today);
+        const loopDate = new Date(today);
         while (loopDate <= endDate) {
             const day = loopDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
             let isClassDay = false;
@@ -853,6 +875,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             commissionRates, addCommissionRate, updateCommissionRate, deleteCommissionRate,
             staff, addStaff, deleteStaff, updateStaff, trainers,
             currentUser, setCurrentUser, hasPermission, rolePermissions, updateRolePermissions,
+            login, logout, selectedServiceId, setSelectedServiceId,
             members, addMember, updateMember, deleteMember, renewMembership,
             appointments, addAppointment, deleteAppointment, cancelAppointment, updateAppointment,
             expenses, addExpense, deleteExpense,

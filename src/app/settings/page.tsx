@@ -1,8 +1,8 @@
 "use client";
 
-import { useGym, Role, Permission } from "@/context/GymContext";
+import { useGym, Role, Permission, CommissionRate, Coupon, Staff } from "@/context/GymContext";
 import { useState, useEffect } from "react";
-import { Lock, Key, Percent, DollarSign, Plus, Trash2, Save, CreditCard, Package as PackageIcon, Info, ShieldCheck, RefreshCw, Download, CheckCircle2, AlertCircle } from "lucide-react";
+import { Key, Percent, Plus, Trash2, Save, CreditCard, ShieldCheck, RefreshCw, Download, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function SettingsPage() {
     const {
@@ -30,30 +30,30 @@ export default function SettingsPage() {
 
     // Update States
     const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error'>('idle');
-    const [updateInfo, setUpdateInfo] = useState<any>(null);
+    const [updateInfo, setUpdateInfo] = useState<unknown>(null);
     const [updateProgress, setUpdateProgress] = useState(0);
     const [updateError, setUpdateError] = useState("");
 
-    useEffect(() => {
-        if (typeof window !== 'undefined' && (window as any).electron) {
-            const electron = (window as any).electron;
+    const electron = (typeof window !== 'undefined' && (window as unknown as { electron: { onUpdateStatus: any, onUpdateProgress: any, checkForUpdate: any, startDownload: any, quitAndInstall: any } }).electron) ? (window as unknown as { electron: { onUpdateStatus: any, onUpdateProgress: any, checkForUpdate: any, startDownload: any, quitAndInstall: any } }).electron : null;
 
-            electron.onUpdateStatus((status: any, info: any) => {
-                setUpdateStatus(status);
-                if (info) setUpdateInfo(info);
-                if (status === 'error') setUpdateError(info);
+    useEffect(() => {
+        if (electron) {
+            electron.onUpdateStatus((status: string, info: unknown) => {
+                setUpdateStatus(status as 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error');
+                if (info) setUpdateInfo(info as { version?: string });
+                if (status === 'error') setUpdateError(String(info));
             });
 
             electron.onUpdateProgress((percent: number) => {
                 setUpdateProgress(percent);
             });
         }
-    }, []);
+    }, [electron]);
 
     const handleCheckUpdate = async () => {
-        if (typeof window !== 'undefined' && (window as any).electron) {
+        if (electron) {
             setUpdateStatus('checking');
-            const res = await (window as any).electron.checkForUpdate();
+            const res = await electron.checkForUpdate();
             if (res?.error) {
                 setUpdateStatus('error');
                 setUpdateError(res.error);
@@ -62,9 +62,9 @@ export default function SettingsPage() {
     };
 
     const handleStartDownload = async () => {
-        if (typeof window !== 'undefined' && (window as any).electron) {
+        if (electron) {
             setUpdateStatus('downloading');
-            const res = await (window as any).electron.startDownload();
+            const res = await electron.startDownload();
             if (res?.error) {
                 setUpdateStatus('error');
                 setUpdateError(res.error);
@@ -73,8 +73,8 @@ export default function SettingsPage() {
     };
 
     const handleInstallUpdate = () => {
-        if (typeof window !== 'undefined' && (window as any).electron) {
-            (window as any).electron.quitAndInstall();
+        if (electron) {
+            electron.quitAndInstall();
         }
     };
 
@@ -99,14 +99,12 @@ export default function SettingsPage() {
         }
     };
 
-    const handlePasswordChange = (id: string, value: string) => {
-        setPasswordEdits(prev => ({ ...prev, [id]: value }));
-    };
+    // const handlePasswordChange = ...;
 
     const handleAddCommission = (e: React.FormEvent) => {
         e.preventDefault();
         if (newInstallment && newRate !== "") {
-            const exists = commissionRates.some(c => c.installments === Number(newInstallment));
+            const exists = commissionRates.some((c: CommissionRate) => c.installments === Number(newInstallment));
             if (exists) {
                 alert(`Bu taksit sayısı (${newInstallment}) zaten tanımlı! Mevcut oranı listeden güncelleyebilirsiniz.`);
                 return;
@@ -121,7 +119,7 @@ export default function SettingsPage() {
     const handleAddCoupon = (e: React.FormEvent) => {
         e.preventDefault();
         if (newCouponCode && newCouponRate !== "") {
-            const exists = coupons.some(c => c.code === newCouponCode.toUpperCase());
+            const exists = coupons.some((c: Coupon) => c.code === newCouponCode.toUpperCase());
             if (exists) {
                 alert(`Bu kupon kodu (${newCouponCode}) zaten tanımlı!`);
                 return;
@@ -244,7 +242,7 @@ export default function SettingsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100">
-                                    {coupons.map((c) => (
+                                    {coupons.map((c: Coupon) => (
                                         <tr key={c.id} className="hover:bg-zinc-50 transition-colors">
                                             <td className="px-4 py-3 font-medium text-black tracking-wider font-mono">{c.code}</td>
                                             <td className="px-4 py-3 font-bold text-pink-600">%{c.discountRate}</td>
@@ -328,7 +326,7 @@ export default function SettingsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100">
-                                    {commissionRates.map((c) => (
+                                    {commissionRates.map((c: CommissionRate) => (
                                         <tr key={c.installments} className="hover:bg-zinc-50 transition-colors">
                                             <td className="px-4 py-3 font-medium text-black">{c.installments === 1 ? "Tek Çekim" : `${c.installments} Taksit`}</td>
                                             <td className="px-4 py-3">
@@ -340,7 +338,7 @@ export default function SettingsPage() {
                                                         onChange={e => updateCommissionRate(c.installments, Number(e.target.value))}
                                                         className="w-16 bg-transparent border-b border-zinc-300 focus:border-indigo-500 outline-none text-center font-bold text-indigo-600"
                                                     />
-                                                    <span className="text-zinc-400">%</span>
+                                                    <p className="text-zinc-400">Versiyon {(updateInfo as any).version || '1.0.8'}</p>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-right">
@@ -424,7 +422,7 @@ export default function SettingsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
-                                {staff.map((s) => (
+                                {staff.map((s: Staff) => (
                                     <tr key={s.id} className="hover:bg-zinc-50 transition-colors">
                                         <td className="px-4 py-3 font-medium text-black">{s.name}</td>
                                         <td className="px-4 py-3 capitalize text-zinc-500">{s.role}</td>
@@ -480,7 +478,7 @@ export default function SettingsPage() {
                                     {updateStatus === 'idle' && "Güncelleştirmeleri kontrol etmek için butona tıklayın."}
                                     {updateStatus === 'checking' && "Sunucu ile bağlantı kuruluyor..."}
                                     {updateStatus === 'not-available' && "Tebrikler! En güncel sürümü kullanıyorsunuz."}
-                                    {updateStatus === 'available' && `Yeni sürüm mevcut: v${updateInfo?.version || '?'}`}
+                                    {updateStatus === 'available' && `Yeni sürüm mevcut: v${(updateInfo as any)?.version || '?'}`}
                                     {updateStatus === 'downloading' && `İndiriliyor: %${Math.round(updateProgress)}`}
                                     {updateStatus === 'ready' && "Güncelleme hazır! Kurulum için yeniden başlatın."}
                                     {updateStatus === 'error' && <span className="text-red-500 font-medium">{updateError || "Bir hata oluştu."}</span>}

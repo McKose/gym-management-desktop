@@ -1,8 +1,8 @@
 "use client";
 
-import { useGym, Staff, Branch, Role } from "@/context/GymContext";
+import { useGym, Member, Package, MembershipHistoryItem, GroupSchedule, Measurement, HealthProfile, Service, CommissionRate, Branch, Staff, Role } from "@/context/GymContext";
 import { useState, useEffect } from "react";
-import { Plus, Trash2, UserCog, Shield, Activity, Stethoscope, Utensils, Lock, Edit2, Phone, Mail, Calendar, ChevronDown, Check, DollarSign, Briefcase, Percent } from "lucide-react";
+import { Plus, Trash2, UserCog, Shield, Activity, Stethoscope, Utensils, Lock, Edit2, Phone, Mail, Calendar, ChevronDown, Check, Briefcase, Percent } from "lucide-react";
 import { createPortal } from "react-dom";
 
 // Helper for Role Icons/Colors
@@ -29,7 +29,8 @@ export default function StaffPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
 
     useEffect(() => {
-        setMounted(true);
+        const timer = setTimeout(() => setMounted(true), 0);
+        return () => clearTimeout(timer);
     }, []);
 
     // Permission Check
@@ -181,7 +182,7 @@ export default function StaffPage() {
                                 value={role}
                                 onChange={e => setRole(e.target.value as Role)}
                                 disabled={!isRoleEditable}
-                                className={`w-full border border-zinc-200 rounded-lg p-2.5 text-black text-sm focus:outline-none focus:border-indigo-500 ${!isRoleEditable ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-50 focus:bg-white'}`}
+                                className={`w - full border border - zinc - 200 rounded - lg p - 2.5 text - black text - sm focus: outline - none focus: border - indigo - 500 ${!isRoleEditable ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-50 focus:bg-white'} `}
                             >
                                 <option value="admin">Admin</option>
                                 <option value="manager">Yönetici</option>
@@ -242,21 +243,21 @@ export default function StaffPage() {
                                     <button
                                         type="button"
                                         onClick={() => setPaymentModel('partner')}
-                                        className={`p-2 rounded border text-xs font-medium text-center transition-colors ${paymentModel === 'partner' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-600'}`}
+                                        className={`p - 2 rounded border text - xs font - medium text - center transition - colors ${paymentModel === 'partner' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-600'} `}
                                     >
                                         Ortak (Kâr Payı)
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPaymentModel('commission')}
-                                        className={`p-2 rounded border text-xs font-medium text-center transition-colors ${paymentModel === 'commission' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-600'}`}
+                                        className={`p - 2 rounded border text - xs font - medium text - center transition - colors ${paymentModel === 'commission' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-600'} `}
                                     >
                                         Prim (Hizmet)
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPaymentModel('salaried')}
-                                        className={`p-2 rounded border text-xs font-medium text-center transition-colors ${paymentModel === 'salaried' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-600'}`}
+                                        className={`p - 2 rounded border text - xs font - medium text - center transition - colors ${paymentModel === 'salaried' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-600'} `}
                                     >
                                         Ücretli (Maaş)
                                     </button>
@@ -312,13 +313,13 @@ export default function StaffPage() {
                                         type="button"
                                         disabled={!isRoleEditable}
                                         onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
-                                        className={`w-full flex items-center justify-between bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 text-sm transition-all
+                                        className={`w - full flex items - center justify - between bg - zinc - 50 border border - zinc - 200 rounded - lg p - 2.5 text - sm transition - all
                                             ${!isRoleEditable ? 'opacity-50 cursor-not-allowed bg-zinc-100' : 'hover:bg-zinc-100 focus:bg-white focus:border-indigo-500'}
-                                        `}
+`}
                                     >
                                         <span className={selectedBranches.length === 0 ? "text-zinc-500" : "text-black"}>
                                             {selectedBranches.length > 0
-                                                ? `${selectedBranches.length} Seçim: ${selectedBranches.map(b => b.charAt(0).toUpperCase() + b.slice(1)).join(", ").substring(0, 30)}${selectedBranches.join(", ").length > 30 ? "..." : ""}`
+                                                ? `${selectedBranches.length} Seçim: ${selectedBranches.map(b => b.charAt(0).toUpperCase() + b.slice(1)).join(", ").substring(0, 30)}${selectedBranches.join(", ").length > 30 ? "..." : ""} `
                                                 : "Branş Seçiniz"
                                             }
                                         </span>
@@ -337,9 +338,9 @@ export default function StaffPage() {
                                                             key={branch}
                                                             type="button"
                                                             onClick={() => handleBranchToggle(branch)}
-                                                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-zinc-50 transition-colors
+                                                            className={`w - full text - left px - 3 py - 2 text - sm flex items - center justify - between hover: bg - zinc - 50 transition - colors
                                                                 ${isSelected ? "bg-indigo-50 text-indigo-700" : "text-zinc-700"}
-                                                            `}
+`}
                                                         >
                                                             <span className="capitalize font-medium">{branch}</span>
                                                             {isSelected && <Check size={16} />}
@@ -390,7 +391,7 @@ export default function StaffPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {staff.map((employee) => {
+                {staff.map((employee: Staff) => {
                     const roleDetails = getRoleDetails(employee.role);
                     const RoleIcon = roleDetails.icon;
                     // Edit Permission: Manage All OR Self
@@ -421,12 +422,12 @@ export default function StaffPage() {
                             </div>
 
                             <div className="flex items-center gap-4 mb-4">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center border ${roleDetails.bg} ${roleDetails.color}`}>
+                                <div className={`w - 12 h - 12 rounded - full flex items - center justify - center border ${roleDetails.bg} ${roleDetails.color} `}>
                                     <RoleIcon size={24} />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-black text-lg">{employee.name}</h3>
-                                    <span className={`text-xs font-medium px-2 py-0.5 rounded border ${roleDetails.bg} ${roleDetails.color}`}>
+                                    <span className={`text - xs font - medium px - 2 py - 0.5 rounded border ${roleDetails.bg} ${roleDetails.color} `}>
                                         {roleDetails.label}
                                     </span>
                                 </div>
@@ -492,7 +493,7 @@ export default function StaffPage() {
 
                                     {(['trainer', 'physio', 'manager', 'admin'].includes(employee.role) && employee.branches?.length > 0) && (
                                         <div className="flex flex-wrap gap-2 pt-1">
-                                            {employee.branches?.map(branch => (
+                                            {employee.branches?.map((branch: Branch) => (
                                                 <span key={branch} className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 border border-zinc-200 capitalize">
                                                     {branch}
                                                 </span>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useGym, Member, Package, MembershipHistoryItem, GroupSchedule, Measurement, HealthProfile, Service } from "@/context/GymContext"; // Added HealthProfile, Service
+import { useGym, Member, Package, MembershipHistoryItem, GroupSchedule, Measurement, HealthProfile, Service, CommissionRate, Branch } from "@/context/GymContext"; // Added Branch
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, Phone, Mail, MoreVertical, CreditCard, Banknote, Calendar, Edit2, RotateCw, History, CheckCircle, XCircle, Download, Activity, Trash2, HeartPulse } from "lucide-react";
+import { Plus, Phone, Mail, Edit2, RotateCw, History, Download, Activity, Trash2, HeartPulse } from "lucide-react";
 import { downloadCSV } from "@/utils/export";
 import Modal from "@/components/Modal";
 import HealthForm from "@/components/HealthForm";
@@ -23,8 +23,11 @@ export default function MembersPage() {
     const canDelete = hasPermission("delete_member");
 
     useEffect(() => {
-        setMounted(true);
-    }, []);
+        const timer = setTimeout(() => {
+            setMounted(true);
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [packages, members]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -46,14 +49,14 @@ export default function MembersPage() {
     // Auto-Calculate End Date & Sessions
     useEffect(() => {
         if (selectedPackageId) {
-            const pkg = packages.find(p => p.id === selectedPackageId);
+            const pkg = packages.find((p: Package) => p.id === selectedPackageId);
             if (pkg && pkg.validityDays) {
                 // Determine logic if needed, currently solved in Render or manual date set
             }
         }
-    }, [selectedPackageId]);
+    }, [selectedPackageId, packages]);
 
-    const filteredPackages = packages.filter(p => p.serviceId === selectedServiceId && p.isActive);
+    const filteredPackages = packages.filter((p: Package) => p.serviceId === selectedServiceId && p.isActive);
 
     useEffect(() => {
         setStartDate(new Date().toISOString().split("T")[0]);
@@ -91,9 +94,9 @@ export default function MembersPage() {
 
     // Calculate Dynamic Price Helper
     const calculatePrice = (pkgId: string, payType: "cash" | "card", inst: number) => {
-        const pkg = packages.find(p => p.id === pkgId);
+        const pkg = packages.find((p: Package) => p.id === pkgId);
         const base = pkg?.price || 0;
-        const rate = payType === "card" ? (commissionRates.find(c => c.installments === inst)?.rate || 0) : 0;
+        const rate = payType === "card" ? (commissionRates.find((c: CommissionRate) => c.installments === inst)?.rate || 0) : 0;
         const commission = base * (rate / 100);
         return base + commission;
     };
@@ -115,10 +118,10 @@ export default function MembersPage() {
     const currentPrice = typeof finalPrice === 'number' ? finalPrice : calculatedPrice;
 
     const handleExport = () => {
-        const data = members.map(m => ({
+        const data = members.map((m: Member) => ({
             "Ad Soyad": m.fullName,
             "Telefon": m.phone,
-            "Paket": packages.find(p => p.id === m.activePackageId)?.name || "Yok",
+            "Paket": packages.find((p: Package) => p.id === m.activePackageId)?.name || "Yok",
             "Durum": m.status === 'active' ? 'Aktif' : 'Pasif',
             "Başlangıç": m.startDate,
             "Bitiş": m.endDate || '-',
@@ -174,7 +177,7 @@ export default function MembersPage() {
             phone,
             email,
             activePackageId: selectedPackageId || undefined,
-            remainingSessions: packages.find(p => p.id === selectedPackageId)?.sessionCount,
+            remainingSessions: packages.find((p: Package) => p.id === selectedPackageId)?.sessionCount,
             startDate,
             paymentType,
             paymentStatus,
@@ -186,7 +189,7 @@ export default function MembersPage() {
         });
 
         // Group Auto-Join Logic
-        const pkg = packages.find(p => p.id === selectedPackageId);
+        const pkg = packages.find((p: Package) => p.id === selectedPackageId);
         // Using sessionFormat instead of legacy category
         if (pkg && pkg.sessionFormat === 'GRUP' && groupSchedule && groupTime) {
             // Branch is now derived from Service, but for now passing a default or deriving logic if needed. 
@@ -195,9 +198,9 @@ export default function MembersPage() {
             // Actually, the new schema doesn't have pkg.branch strongly typed or present potentially.
             // Let's pass 'reformer' as fallback or fix joinGroup types later.
             // Better: Get Service category.
-            const service = services.find(s => s.id === pkg.serviceId);
+            const service = services.find((s: Service) => s.id === pkg.serviceId);
             // Assuming branch ~ service name normalized
-            joinGroup([newMemberId], groupSchedule as GroupSchedule, groupTime, service?.name.toLowerCase() as any || 'reformer');
+            joinGroup([newMemberId], groupSchedule as GroupSchedule, groupTime, (service?.name.toLowerCase() || 'reformer') as Branch);
         }
 
         setIsModalOpen(false);
@@ -285,18 +288,10 @@ export default function MembersPage() {
         alert("Ölçüm eklendi!");
     };
 
-    if (!canView) return <div className="p-10 text-center text-zinc-500">Yetkiniz yok.</div>;
+    if (!mounted) return <div className="p-8 text-center text-zinc-500">Yükleniyor...</div>;
 
     // --- RENDER HELPERS ---
-    const getStatusBadge = (member: Member) => {
-        const isActive = member.status === 'active';
-        return (
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider border ${isActive ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-zinc-100 text-zinc-500 border-zinc-200'}`}>
-                {isActive ? <CheckCircle size={10} /> : <XCircle size={10} />}
-                {isActive ? 'Aktif' : 'Pasif'}
-            </span>
-        );
-    };
+    // (Helper functions go here if needed)
 
     return (
         <div className="space-y-8 pb-20">
@@ -308,7 +303,7 @@ export default function MembersPage() {
                 <div className="flex gap-3">
                     {canView && (
                         <button onClick={handleExport} className="btn-secondary flex items-center gap-2">
-                            <Download size={20} /> Excel'e Aktar
+                            <Download size={20} /> Excel&apos;e Aktar
                         </button>
                     )}
                     {canAdd && (
@@ -333,7 +328,7 @@ export default function MembersPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100">
-                        {members.map((member) => (
+                        {members.map((member: Member) => (
                             <tr key={member.id} className="hover:bg-zinc-50 transition-colors group cursor-pointer" onClick={() => openHistoryModal(member)}>
                                 <td className="p-4">
                                     <div className="font-bold text-black">{member.fullName}</div>
@@ -352,10 +347,10 @@ export default function MembersPage() {
                                     {member.healthProfile ? (
                                         <div className="flex flex-col gap-0.5">
                                             {/* Risk Level Text */}
-                                            <span className={`text-xs font-bold ${member.healthProfile.riskLevel === 'high' ? 'text-red-600' :
+                                            <span className={`text - xs font - bold ${member.healthProfile.riskLevel === 'high' ? 'text-red-600' :
                                                 member.healthProfile.riskLevel === 'medium' ? 'text-orange-600' :
                                                     'text-emerald-600'
-                                                }`}>
+                                                } `}>
                                                 {member.healthProfile.riskLevel === 'high' ? 'Yüksek Risk' :
                                                     member.healthProfile.riskLevel === 'medium' ? 'Orta Risk' :
                                                         'Düşük Risk'}
@@ -373,20 +368,20 @@ export default function MembersPage() {
                                             </span>
                                         </div>
                                     ) : (
-                                        <span className="text-xs text-zinc-300">-</span>
+                                        <span className="text-zinc-500">{(member as any).branchId || '-'}</span>
                                     )}
                                 </td>
 
                                 {/* Membership Status Column */}
                                 <td className="p-4">
-                                    <span className={`text-xs font-bold ${member.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                    <span className={`text - xs font - bold ${member.status === 'active' ? 'text-emerald-600' : 'text-red-500'} `}>
                                         {member.status === 'active' ? 'AKTİF' : 'PASİF'}
                                     </span>
                                 </td>
 
                                 <td className="p-4">
                                     <div className="text-sm font-medium text-black">
-                                        {packages.find(p => p.id === member.activePackageId)?.name || "Paket Yok"}
+                                        {packages.find((p: Package) => p.id === member.activePackageId)?.name || "Paket Yok"}
                                     </div>
                                     <div className="text-xs text-zinc-500 mt-0.5">Başlangıç: {member.startDate}</div>
                                 </td>
@@ -437,7 +432,7 @@ export default function MembersPage() {
                                         {canDelete && (
                                             <button
                                                 onClick={() => {
-                                                    if (window.confirm(`${member.fullName} isimli üyeyi silmek istediğinize emin misiniz?`)) {
+                                                    if (window.confirm(`${member.fullName} isimli üyeyi silmek istediğinize emin misiniz ? `)) {
                                                         deleteMember(member.id);
                                                     }
                                                 }}
@@ -504,7 +499,7 @@ export default function MembersPage() {
                                     required
                                 >
                                     <option value="">Seçiniz</option>
-                                    {services.filter(s => s.isActive).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    {services.filter((s: Service) => s.isActive).map((s: Service) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
 
@@ -519,7 +514,7 @@ export default function MembersPage() {
                                     disabled={!selectedServiceId}
                                 >
                                     <option value="">{selectedServiceId ? 'Paket Seçiniz' : 'Önce Hizmet Seçin'}</option>
-                                    {filteredPackages.map(p => <option key={p.id} value={p.id}>{p.name} - {p.price} TL</option>)}
+                                    {filteredPackages.map((p: Package) => <option key={p.id} value={p.id}>{p.name} - {p.price} TL</option>)}
                                 </select>
                             </div>
                         </div>
@@ -535,26 +530,25 @@ export default function MembersPage() {
                                     <span className="block text-xs font-bold text-indigo-800 uppercase mb-1">Bitiş Tarihi</span>
                                     <div className="bg-white/50 border border-indigo-200 rounded px-2 py-1 text-indigo-900 font-bold">
                                         {(() => {
-                                            const pkg = packages.find(p => p.id === selectedPackageId);
-                                            if (!pkg?.validityDays) return 'Süresiz / Manuel';
                                             const d = new Date(startDate);
-                                            d.setDate(d.getDate() + pkg.validityDays);
+                                            const pkg = packages.find((p: Package) => p.id === selectedPackageId);
+                                            d.setDate(d.getDate() + (pkg?.validityDays || 30));
                                             return d.toLocaleDateString('tr-TR');
                                         })()}
                                     </div>
                                     <div className="text-[10px] text-indigo-500 mt-0.5">
-                                        {packages.find(p => p.id === selectedPackageId)?.validityDays} Gün Geçerli
+                                        {packages.find((p: Package) => p.id === selectedPackageId)?.validityDays} Gün Geçerli
                                     </div>
                                 </div>
 
-                                {packages.find(p => p.id === selectedPackageId)?.type === 'DERS_PAKETI' && (
+                                {packages.find((p: Package) => p.id === selectedPackageId)?.type === 'DERS_PAKETI' && (
                                     <div className="col-span-2 border-t border-indigo-200 pt-2 mt-1">
                                         <span className="block text-xs font-bold text-indigo-800 uppercase mb-1">Ders Hakkı</span>
                                         <div className="font-bold text-indigo-900">
-                                            {packages.find(p => p.id === selectedPackageId)?.sessionCount} Ders
+                                            {packages.find((p: Package) => p.id === selectedPackageId)?.sessionCount} Ders
                                         </div>
                                         <p className="text-[10px] text-indigo-600 italic mt-1">
-                                            * Süre dolarsa ({packages.find(p => p.id === selectedPackageId)?.validityDays} gün), kalan dersler yanar.
+                                            * Süre dolarsa ({packages.find((p: Package) => p.id === selectedPackageId)?.validityDays} gün), kalan dersler yanar.
                                         </p>
                                     </div>
                                 )}
@@ -562,11 +556,11 @@ export default function MembersPage() {
                         )}
 
                         {/* Group Selection - Show only if Group Format is selected */}
-                        {packages.find(p => p.id === selectedPackageId)?.sessionFormat === 'GRUP' && (
+                        {packages.find((p: Package) => p.id === selectedPackageId)?.sessionFormat === 'GRUP' && (
                             <div className="grid grid-cols-2 gap-3 mt-3 bg-white p-3 rounded-lg border border-zinc-200">
                                 <div>
                                     <label className="label text-zinc-800">Ders Günleri</label>
-                                    <select value={groupSchedule} onChange={e => setGroupSchedule(e.target.value as any)} className="input-field" required>
+                                    <select value={groupSchedule} onChange={e => setGroupSchedule(e.target.value as GroupSchedule)} className="input-field" required>
                                         <option value="">Seçiniz</option>
                                         <option value="MWF">Pazartesi - Çarşamba - Cuma</option>
                                         <option value="TTS">Salı - Perşembe - Cumartesi</option>
@@ -594,13 +588,13 @@ export default function MembersPage() {
                     <div className="space-y-4 pt-4 border-t border-zinc-100">
                         <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ödeme</h3>
                         <div className="flex p-1 bg-zinc-100 rounded-lg">
-                            <button type="button" onClick={() => setPaymentType("cash")} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${paymentType === "cash" ? "bg-white shadow-sm text-emerald-600" : "text-zinc-500"}`}>Nakit</button>
-                            <button type="button" onClick={() => setPaymentType("card")} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${paymentType === "card" ? "bg-white shadow-sm text-indigo-600" : "text-zinc-500"}`}>Kredi Kartı</button>
+                            <button type="button" onClick={() => setPaymentType("cash")} className={`flex - 1 py - 2 text - sm font - bold rounded - md transition - all ${paymentType === "cash" ? "bg-white shadow-sm text-emerald-600" : "text-zinc-500"} `}>Nakit</button>
+                            <button type="button" onClick={() => setPaymentType("card")} className={`flex - 1 py - 2 text - sm font - bold rounded - md transition - all ${paymentType === "card" ? "bg-white shadow-sm text-indigo-600" : "text-zinc-500"} `}>Kredi Kartı</button>
                         </div>
 
                         {paymentType === "card" && (
                             <select value={installments} onChange={e => setInstallments(Number(e.target.value))} className="input-field">
-                                {commissionRates.map(c => <option key={c.installments} value={c.installments}>{c.installments === 1 ? 'Tek Çekim' : `${c.installments} Taksit`} {c.rate > 0 && `(+%${c.rate})`}</option>)}
+                                {commissionRates.map((c: CommissionRate) => <option key={c.installments} value={c.installments}>{c.installments === 1 ? 'Tek Çekim' : `${c.installments} Taksit`} {c.rate > 0 && `(+% ${c.rate})`}</option>)}
                             </select>
                         )}
 
@@ -658,7 +652,7 @@ export default function MembersPage() {
                                 required
                             >
                                 <option value="">Seçiniz</option>
-                                {services.filter(s => s.isActive).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                {services.filter((s: Service) => s.isActive).map((s: Service) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
 
@@ -667,7 +661,7 @@ export default function MembersPage() {
                             <label className="label">Paket</label>
                             <select value={selectedPackageId} onChange={e => setSelectedPackageId(e.target.value)} className="input-field" required disabled={!selectedServiceId}>
                                 <option value="">Önce Hizmet Seçiniz</option>
-                                {packages.filter(p => p.serviceId === selectedServiceId && p.isActive).map(p => (
+                                {packages.filter((p: Package) => p.serviceId === selectedServiceId && p.isActive).map((p: Package) => (
                                     <option key={p.id} value={p.id}>{p.name} - {p.price} TL</option>
                                 ))}
                             </select>
@@ -676,16 +670,16 @@ export default function MembersPage() {
                         {/* Package Details Info Box */}
                         {selectedPackageId && (
                             <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex gap-4 text-xs text-indigo-800">
-                                {packages.find(p => p.id === selectedPackageId)?.validityDays && (
+                                {packages.find((p: Package) => p.id === selectedPackageId)?.validityDays && (
                                     <div className="flex items-center gap-1">
                                         <span className="font-bold">Süre:</span>
-                                        {packages.find(p => p.id === selectedPackageId)?.validityDays} Gün
+                                        {packages.find((p: Package) => p.id === selectedPackageId)?.validityDays} Gün
                                     </div>
                                 )}
-                                {packages.find(p => p.id === selectedPackageId)?.sessionCount && (
+                                {packages.find((p: Package) => p.id === selectedPackageId)?.sessionCount && (
                                     <div className="flex items-center gap-1">
                                         <span className="font-bold">Ders:</span>
-                                        {packages.find(p => p.id === selectedPackageId)?.sessionCount} Adet
+                                        {packages.find((p: Package) => p.id === selectedPackageId)?.sessionCount} Adet
                                     </div>
                                 )}
                             </div>
@@ -695,12 +689,12 @@ export default function MembersPage() {
                             <label className="label">Başlangıç Tarihi</label>
                             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="input-field" required />
                             {/* Auto-calc End Date Display */}
-                            {selectedPackageId && packages.find(p => p.id === selectedPackageId)?.validityDays && startDate && (
+                            {selectedPackageId && packages.find((p: Package) => p.id === selectedPackageId)?.validityDays && startDate && (
                                 <p className="text-xs text-zinc-400 mt-1">
                                     Bitiş Tarihi: <span className="font-medium text-zinc-600">
                                         {(() => {
                                             const d = new Date(startDate);
-                                            d.setDate(d.getDate() + (packages.find(p => p.id === selectedPackageId)?.validityDays || 0));
+                                            d.setDate(d.getDate() + (packages.find((p: Package) => p.id === selectedPackageId)?.validityDays || 0));
                                             return d.toLocaleDateString('tr-TR');
                                         })()}
                                     </span>
@@ -713,13 +707,13 @@ export default function MembersPage() {
                     <div className="space-y-4 pt-4 border-t border-zinc-100">
                         <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ödeme</h3>
                         <div className="flex p-1 bg-zinc-100 rounded-lg">
-                            <button type="button" onClick={() => setPaymentType("cash")} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${paymentType === "cash" ? "bg-white shadow-sm text-emerald-600" : "text-zinc-500"}`}>Nakit</button>
-                            <button type="button" onClick={() => setPaymentType("card")} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${paymentType === "card" ? "bg-white shadow-sm text-indigo-600" : "text-zinc-500"}`}>Kredi Kartı</button>
+                            <button type="button" onClick={() => setPaymentType("cash")} className={`flex - 1 py - 2 text - sm font - bold rounded - md transition - all ${paymentType === "cash" ? "bg-white shadow-sm text-emerald-600" : "text-zinc-500"} `}>Nakit</button>
+                            <button type="button" onClick={() => setPaymentType("card")} className={`flex - 1 py - 2 text - sm font - bold rounded - md transition - all ${paymentType === "card" ? "bg-white shadow-sm text-indigo-600" : "text-zinc-500"} `}>Kredi Kartı</button>
                         </div>
 
                         {paymentType === "card" && (
                             <select value={installments} onChange={e => setInstallments(Number(e.target.value))} className="input-field">
-                                {commissionRates.map(c => <option key={c.installments} value={c.installments}>{c.installments === 1 ? 'Tek Çekim' : `${c.installments} Taksit`} {c.rate > 0 && `(+%${c.rate})`}</option>)}
+                                {commissionRates.map((c: CommissionRate) => <option key={c.installments} value={c.installments}>{c.installments === 1 ? 'Tek Çekim' : `${c.installments} Taksit`} {c.rate > 0 && `(+% ${c.rate})`}</option>)}
                             </select>
                         )}
 
@@ -752,7 +746,7 @@ export default function MembersPage() {
                         <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Mevcut Üyelik</h3>
                         <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex justify-between items-center">
                             <div>
-                                <div className="font-bold text-emerald-900">{packages.find(p => p.id === selectedMember?.activePackageId)?.name || 'Paket adı bulunamadı'}</div>
+                                <div className="font-bold text-emerald-900">{packages.find((p: Package) => p.id === selectedMember?.activePackageId)?.name || 'Paket adı bulunamadı'}</div>
                                 <div className="text-xs text-emerald-700 mt-1">Başlangıç: {selectedMember?.startDate} • Bitiş: {selectedMember?.endDate || 'Süresiz'}</div>
                             </div>
                             <div className="text-emerald-600 font-bold bg-white px-3 py-1 rounded-lg shadow-sm text-sm">Aktif</div>
@@ -766,7 +760,7 @@ export default function MembersPage() {
                             <div className="text-center py-6 text-zinc-400 text-sm italic border-2 border-dashed border-zinc-100 rounded-xl">Geçmiş kayıt bulunamadı.</div>
                         ) : (
                             <div className="space-y-3">
-                                {selectedMember.history.slice().reverse().map((item, idx) => (
+                                {selectedMember.history.slice().reverse().map((item: MembershipHistoryItem, idx: number) => (
                                     <div key={idx} className="bg-white border border-zinc-200 p-3 rounded-lg flex justify-between items-center hover:bg-zinc-50 transition-colors">
                                         <div>
                                             <div className="font-bold text-zinc-800 text-sm">{item.packageName}</div>
@@ -829,7 +823,7 @@ export default function MembersPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
-                                        {selectedMember.measurements.slice().reverse().map((m, i) => (
+                                        {selectedMember.measurements.slice().reverse().map((m: Measurement, i: number) => (
                                             <tr key={i} className="hover:bg-zinc-50">
                                                 <td className="p-2 font-bold text-zinc-700">{m.date}</td>
                                                 <td className="p-2">{m.weight}</td>
@@ -857,7 +851,7 @@ export default function MembersPage() {
                         <HealthForm
                             initialData={selectedMember.healthProfile}
                             readOnly={!canEdit}
-                            onChange={(newData) => {
+                            onChange={(newData: HealthProfile) => {
                                 // Real-time update
                                 updateMember(selectedMember.id, { healthProfile: newData });
                                 setSelectedMember({ ...selectedMember, healthProfile: newData });
@@ -868,20 +862,57 @@ export default function MembersPage() {
                 )}
             </Modal>
             {/* Custom Styles */}
-            <style jsx global>{`
-                .input-field {
-                    @apply w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-black focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all;
-                }
+            <style dangerouslySetInnerHTML={{
+                __html: `
+    .input - field {
+    width: 100 %;
+    background - color: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    border - radius: 0.5rem;
+    padding: 0.75rem;
+    color: black;
+    outline: none;
+    font - size: 0.875rem;
+    transition: all 0.2s;
+}
+                .input - field:focus {
+    ring: 2px;
+    ring - color: black;
+}
                 .label {
-                    @apply block text-xs font-bold text-zinc-500 mb-1.5 uppercase;
-                }
-                .btn-primary {
-                    @apply bg-black text-white font-bold py-3 px-4 rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-black/10 active:scale-95 text-sm;
-                }
-                .btn-secondary {
-                    @apply bg-zinc-100 text-zinc-700 font-bold py-3 px-4 rounded-xl hover:bg-zinc-200 transition-all active:scale-95 text-sm;
-                }
-            `}</style>
+    display: block;
+    font - size: 0.75rem;
+    font - weight: 700;
+    color: #71717a;
+    margin - bottom: 0.375rem;
+    text - transform: uppercase;
+}
+                .btn - primary {
+    background - color: black;
+    color: white;
+    font - weight: 700;
+    padding: 0.75rem 1rem;
+    border - radius: 0.75rem;
+    transition: all 0.2s;
+    box - shadow: 0 10px 15px - 3px rgba(0, 0, 0, 0.1);
+    font - size: 0.875rem;
+}
+                .btn - primary:hover {
+    background - color: #27272a;
+}
+                .btn - secondary {
+    background - color: #f4f4f5;
+    color: #3f3f46;
+    font - weight: 700;
+    padding: 0.75rem 1rem;
+    border - radius: 0.75rem;
+    transition: all 0.2s;
+    font - size: 0.875rem;
+}
+                .btn - secondary:hover {
+    background - color: #e4e4e7;
+}
+`}} />
         </div>
     );
 }

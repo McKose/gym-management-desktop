@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 interface HealthBadgeProps {
     riskLevel?: 'low' | 'medium' | 'high';
@@ -18,7 +18,7 @@ export default function HealthBadge({ riskLevel, showLabel = true }: HealthBadge
     const { color, icon: Icon, label } = config[riskLevel];
 
     return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${color}`}>
+        <span className={`inline - flex items - center gap - 1.5 px - 2.5 py - 1 rounded - full text - xs font - bold border ${color} `}>
             <Icon size={12} strokeWidth={3} />
             {showLabel && label}
         </span>
@@ -40,7 +40,7 @@ export function BranchSuitability({ riskLevel, branch }: { riskLevel?: string, b
     }
 
     return (
-        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${suitability.color}`}>
+        <span className={`text - [10px] uppercase font - bold px - 2 py - 0.5 rounded border ${suitability.color} `}>
             {branch}: {suitability.text}
         </span>
     );

@@ -2,20 +2,21 @@
 
 import { useGym, Service, Package, PackageType, ServiceCategory, SessionFormat } from "@/context/GymContext";
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Package as PackageIcon, Info, Edit2, Layers, ChevronRight, Settings, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, Layers, ChevronRight, Package as PackageIcon } from "lucide-react";
 import Modal from "@/components/Modal";
 
 export default function PackagesPage() {
     const {
         services, addService, updateService, deleteService,
-        packages, addPackage, deletePackage, updatePackage,
+        packages, addPackage, updatePackage, deletePackage,
+        selectedServiceId, setSelectedServiceId,
         hasPermission
     } = useGym();
 
     const [mounted, setMounted] = useState(false);
 
     // State
-    const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+    // const [selectedServiceId, setSelectedServiceId] = ...; // Now from context
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
     const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
@@ -35,11 +36,14 @@ export default function PackagesPage() {
     const [pkgValidityReq, setPkgValidityReq] = useState(true);
 
     useEffect(() => {
-        setMounted(true);
-        if (services.length > 0 && !selectedServiceId) {
-            setSelectedServiceId(services[0].id);
-        }
-    }, [services]);
+        const timer = setTimeout(() => {
+            setMounted(true);
+            if (services.length > 0 && !selectedServiceId) {
+                setSelectedServiceId(services[0].id);
+            }
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [services, selectedServiceId, setSelectedServiceId]);
 
     const canManage = hasPermission("manage_packages");
 
@@ -124,8 +128,8 @@ export default function PackagesPage() {
     };
 
     // Derived Data
-    const activeService = services.find(s => s.id === selectedServiceId);
-    const servicePackages = packages.filter(p => p.serviceId === selectedServiceId);
+    const activeService = services.find((s: Service) => s.id === selectedServiceId);
+    const servicePackages = packages.filter((p: Package) => p.serviceId === selectedServiceId);
 
     if (!mounted) return null;
 
@@ -144,7 +148,7 @@ export default function PackagesPage() {
                     )}
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    {services.map(service => (
+                    {services.map((service: Service) => (
                         <button
                             key={service.id}
                             onClick={() => setSelectedServiceId(service.id)}
@@ -192,7 +196,7 @@ export default function PackagesPage() {
 
                         <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/50">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {servicePackages.map(pkg => (
+                                {servicePackages.map((pkg: Package) => (
                                     <div key={pkg.id} className="bg-white border border-zinc-200 rounded-xl p-5 hover:shadow-lg transition-all relative group">
                                         {canManage && (
                                             <>

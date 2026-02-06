@@ -1,8 +1,8 @@
 "use client";
 
-import { useGym } from "@/context/GymContext";
+import { useGym, Group, Member } from "@/context/GymContext";
 import { useState } from "react";
-import { Search, Users, Calendar, Clock, MoreVertical, Plus } from "lucide-react";
+import { Search, MoreVertical, Calendar, Clock, Users } from "lucide-react";
 
 export default function GroupsPage() {
     const { groups, members, hasPermission } = useGym();
@@ -11,7 +11,7 @@ export default function GroupsPage() {
     const canView = hasPermission("view_schedule"); // Reusing schedule permission
     // const canAdd = hasPermission("manage_schedule");
 
-    const filteredGroups = groups.filter(g =>
+    const filteredGroups = groups.filter((g: Group) =>
         g.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -45,8 +45,8 @@ export default function GroupsPage() {
 
             {/* Groups Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGroups.map(group => {
-                    const activeMembersCount = members.filter(m => m.groupId === group.id && m.status === 'active').length;
+                {filteredGroups.map((group: Group) => {
+                    const activeMembersCount = members.filter((m: Member) => m.groupId === group.id && m.status === 'active').length;
 
                     return (
                         <div key={group.id} className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -81,17 +81,17 @@ export default function GroupsPage() {
                             <div>
                                 <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Katılımcılar</h4>
                                 <div className="flex -space-x-2 overflow-hidden">
-                                    {members.filter(m => m.groupId === group.id).slice(0, 5).map(m => (
+                                    {members.filter((m: Member) => m.groupId === group.id).slice(0, 5).map((m: Member) => (
                                         <div key={m.id} className="w-8 h-8 rounded-full bg-zinc-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-zinc-600" title={m.fullName}>
                                             {m.fullName.charAt(0)}
                                         </div>
                                     ))}
-                                    {members.filter(m => m.groupId === group.id).length > 5 && (
+                                    {members.filter((m: Member) => m.groupId === group.id).length > 5 && (
                                         <div className="w-8 h-8 rounded-full bg-zinc-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-zinc-400">
-                                            +{members.filter(m => m.groupId === group.id).length - 5}
+                                            +{members.filter((m: Member) => m.groupId === group.id).length - 5}
                                         </div>
                                     )}
-                                    {members.filter(m => m.groupId === group.id).length === 0 && (
+                                    {members.filter((m: Member) => m.groupId === group.id).length === 0 && (
                                         <span className="text-xs text-zinc-400 italic pl-2">Henüz üye yok.</span>
                                     )}
                                 </div>

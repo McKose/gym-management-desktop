@@ -1,15 +1,18 @@
 "use client";
 
-import { useGym } from "@/context/GymContext";
-import { Users, TrendingUp, Calendar, DollarSign, AlertTriangle, Package as PackageIcon, Clock } from "lucide-react";
+import { useGym, Member, Appointment, Product, Staff, Package } from "@/context/GymContext";
+import { Users, Calendar, AlertTriangle, Clock } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  const { members, packages, appointments, trainers, products, productSales, hasPermission } = useGym();
+  const { members, packages, appointments, trainers, products, hasPermission } = useGym();
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Permissions
   const canViewStats = hasPermission("view_stats");
@@ -17,9 +20,9 @@ export default function Home() {
 
   // --- METRICS ---
   const totalMembers = members.length;
-  const activeMembersOnly = members.filter(m => m.activePackageId && m.status === 'active').length;
+  const activeMembersOnly = members.filter((m: Member) => m.activePackageId && m.status === 'active').length;
   const passiveMembers = totalMembers - activeMembersOnly;
-  const todaysAppointments = appointments.filter(a => a.date === new Date().toISOString().split("T")[0]).length;
+  const todaysAppointments = appointments.filter((a: Appointment) => a.date === new Date().toISOString().split("T")[0]).length;
 
   // --- WEEKLY SCHEDULE HELPER ---
   const getWeekDates = () => {
@@ -47,7 +50,7 @@ export default function Home() {
 
   const getCellStatus = (date: string, time: string) => {
     // Find appointments for this slot
-    const apps = appointments.filter(a => a.date === date && a.time === time);
+    const apps = appointments.filter((a: Appointment) => a.date === date && a.time === time);
     if (apps.length === 0) return null;
 
     // Priority: Cancelled -> Completed -> Scheduled? 
@@ -55,9 +58,9 @@ export default function Home() {
     // Simplification: Show stats of first one or count.
     // User asked for colors: Completed(Green), Upcoming(Blue), Rescheduled(Yellow), Cancelled(Red).
 
-    const hasCompleted = apps.some(a => a.status === 'completed');
-    const hasCancelled = apps.some(a => a.status === 'cancelled');
-    const hasScheduled = apps.some(a => a.status === 'scheduled');
+    const hasCompleted = apps.some((a: Appointment) => a.status === 'completed');
+    const hasCancelled = apps.some((a: Appointment) => a.status === 'cancelled');
+    const hasScheduled = apps.some((a: Appointment) => a.status === 'scheduled');
 
     if (hasCompleted) return { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Tamamlandı' };
     if (hasCancelled) return { color: 'bg-red-100 text-red-700 border-red-200', label: 'İptal' }; // Assuming cancelled is prioritized if no completion
@@ -72,9 +75,9 @@ export default function Home() {
   };
 
   // --- ALERTS ---
-  const lowStockProducts = products.filter(p => p.stock < 5);
+  const lowStockProducts = products.filter((p: Product) => p.stock < 5);
 
-  const expiringMembers = members.filter(m => {
+  const expiringMembers = members.filter((m: Member) => {
     if (!m.endDate || m.status !== 'active') return false;
     const end = new Date(m.endDate);
     const today = new Date();
@@ -193,7 +196,7 @@ export default function Home() {
                       <td className="p-2 border-r border-b border-zinc-100 font-bold text-zinc-400 text-xs text-center">{time}</td>
                       {weekDays.map(date => {
                         const status = getCellStatus(date, time);
-                        const apps = appointments.filter(a => a.date === date && a.time === time);
+                        const apps = appointments.filter((a: Appointment) => a.date === date && a.time === time);
                         const count = apps.length;
 
                         // Resolve Trainer Name for the first appointment (or show 'Mixed' if multiple?)
@@ -201,7 +204,7 @@ export default function Home() {
                         let trainerName = '';
                         if (apps.length > 0) {
                           const tId = apps[0].trainerId;
-                          const trainer = trainers.find(t => t.id === tId);
+                          const trainer = trainers.find((t: Staff) => t.id === tId);
                           trainerName = trainer?.name || '';
                           // Formatting: "Ahmet Hoca" -> "Ahmet H." or full name if space permits
                           // Let's split first name
@@ -245,11 +248,11 @@ export default function Home() {
                   <h3 className="text-sm font-bold text-black uppercase tracking-wider">Yaklaşan Bitişler</h3>
                 </div>
                 <div className="space-y-2">
-                  {expiringMembers.slice(0, 5).map(m => (
+                  {expiringMembers.slice(0, 5).map((m: Member) => (
                     <div key={m.id} className="flex justify-between items-center text-xs p-2 bg-red-50 rounded text-red-900 border border-red-100">
                       <div className="flex flex-col">
                         <span className="font-bold truncate max-w-[100px]">{m.fullName}</span>
-                        <span className="opacity-70 scale-90 origin-left">{packages.find(p => p.id === m.activePackageId)?.name}</span>
+                        <span className="opacity-70 scale-90 origin-left">{packages.find((p: Package) => p.id === m.activePackageId)?.name}</span>
                       </div>
                       <span className="font-bold">{m.endDate}</span>
                     </div>
@@ -265,7 +268,7 @@ export default function Home() {
                   <h3 className="text-sm font-bold text-black uppercase tracking-wider">Stok Uyarıları</h3>
                 </div>
                 <div className="space-y-2">
-                  {lowStockProducts.slice(0, 5).map(p => (
+                  {lowStockProducts.slice(0, 5).map((p: Product) => (
                     <div key={p.id} className="flex justify-between items-center text-xs p-2 bg-amber-50 rounded text-amber-900 border border-amber-100">
                       <span className="font-medium truncate">{p.name}</span>
                       <span className="font-bold">{p.stock} Adet</span>

@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UserCog, Calendar, CreditCard, LogOut, Package as PackageIcon, RefreshCw, Settings, ShoppingBag, Layers } from "lucide-react";
-import { useGym, Staff } from "@/context/GymContext"; // Added Staff import
+import { useGym, Staff } from "@/context/GymContext";
 import { useState, useEffect } from "react";
 import LoginModal from "./LoginModal";
+import React from 'react';
+
+interface SidebarMenuItem {
+    name: string;
+    href: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    permission: string | null;
+}
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -17,13 +25,16 @@ export default function Sidebar() {
 
     // Force Login on Mount if no user (Wait for load)
     useEffect(() => {
-        if (!isLoaded) return; // Wait for persistence
+        if (!isLoaded) return;
 
         if (!currentUser) {
-            setIsLoginModalOpen(true);
+            const timer = setTimeout(() => setIsLoginModalOpen(true), 0);
+            return () => clearTimeout(timer);
         } else {
-            // If user is logged in, close modal (unless switching)
-            if (!switchTarget) setIsLoginModalOpen(false);
+            if (!switchTarget) {
+                const timer = setTimeout(() => setIsLoginModalOpen(false), 0);
+                return () => clearTimeout(timer);
+            }
         }
     }, [currentUser, switchTarget, isLoaded]);
 
@@ -58,9 +69,9 @@ export default function Sidebar() {
     ];
 
     // Filter items based on current user's permissions
-    const visibleItems = allMenuItems.filter(item => {
-        if (!item.permission) return true; // Always show (e.g., Dashboard)
-        return hasPermission(item.permission as any);
+    const visibleItems = allMenuItems.filter((item: SidebarMenuItem) => {
+        if (!item.permission) return true;
+        return hasPermission(item.permission as string);
     });
 
     return (
@@ -80,23 +91,17 @@ export default function Sidebar() {
 
                 {/* Centered Navigation */}
                 <nav className="flex items-center gap-[30px]">
-                    {visibleItems.map((item) => {
+                    {visibleItems.map((item: SidebarMenuItem) => {
                         const isActive = pathname === item.href;
                         const Icon = item.icon;
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center gap-2 transition-colors group ${isActive
-                                    ? "text-black"
-                                    : "text-zinc-500 hover:text-black"
-                                    }`}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-black text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-100 hover:text-black'}`}
                             >
-                                <Icon
-                                    size={24}
-                                    className={`${isActive ? "text-black" : "text-zinc-400 group-hover:text-black"}`}
-                                />
-                                <span className={`text-sm font-medium tracking-wide ${isActive ? "font-bold" : ""}`}>{item.name}</span>
+                                <Icon size={18} />
+                                {item.name}
                             </Link>
                         );
                     })}
@@ -115,7 +120,7 @@ export default function Sidebar() {
                         <div className="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-[60]">
                             <div className="bg-white border border-zinc-200 rounded-lg shadow-xl p-2">
                                 <p className="text-[10px] uppercase text-zinc-400 font-bold px-2 py-1">Kullanıcı Seç</p>
-                                {staff.map(s => (
+                                {staff.map((s: Staff) => (
                                     <button
                                         key={s.id}
                                         onClick={() => handleSwitchRequest(s)}

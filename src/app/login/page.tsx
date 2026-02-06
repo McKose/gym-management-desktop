@@ -1,32 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useGym, Role } from "@/context/GymContext";
-import { Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useGym, Role } from "@/context/GymContext";
 
 export default function LoginPage() {
-    const { setCurrentUser, staff } = useGym();
+    const { login } = useGym();
     const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const [role, setRole] = useState<Role>("manager");
     const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Find user by name and role (Simple simulation)
-        // In reality, we'd check ID or handle explicit login. 
-        // For now, let's just find the first user matching the role or create a dummy session if specific user entry is desired.
-
-        // Let's filter by Role as the UI suggests simulating a "Role Login". 
-        // We'll pick the first staff member with that role.
-        const user = staff.find(s => s.role === role);
-
-        if (user) {
-            setCurrentUser(user);
+        try {
+            login(role as any);
             router.push("/");
-        } else {
-            alert("Bu rolde kullanıcı bulunamadı!");
+        } catch {
+            // setError("Giriş yapılırken bir hata oluştu.");
         }
     };
 
@@ -42,7 +35,25 @@ export default function LoginPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Temporarily simplified login to just Role Selection since we are moving away from username match in simulation */}
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            placeholder="Kullanıcı Adı"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Şifre"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
+                        />
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-zinc-400 mb-1">Giriş Yapılacak Rol</label>
                         <div className="grid grid-cols-2 gap-3">
@@ -51,16 +62,15 @@ export default function LoginPage() {
                                     key={r}
                                     type="button"
                                     onClick={() => setRole(r)}
-                                    className={`py-3 rounded-lg border transition-all capitalize ${role === r
-                                        ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
-                                        : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:border-zinc-500"
-                                        }`}
+                                    className={`flex-1 py-2 rounded-lg border transition-all capitalize ${role === r ? 'bg-black text-white border-black font-bold' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'}`}
                                 >
                                     {r}
                                 </button>
                             ))}
                         </div>
                     </div>
+
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
 
                     <button type="submit" className="w-full btn-primary mt-4">
                         Giriş Yap

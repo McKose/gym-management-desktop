@@ -1,13 +1,13 @@
 "use client";
 
-import { useGym, Product } from "@/context/GymContext";
-import { useState, useEffect } from "react";
+import { useGym, Product, Coupon, CommissionRate } from "@/context/GymContext";
+import { useState } from "react";
 import { Plus, Search, Trash2, ShoppingCart, Minus, CreditCard, Banknote, Landmark, Percent, Edit2 } from "lucide-react";
 import Modal from "@/components/Modal";
 
 export default function StorePage() {
     const {
-        products, addProduct, updateProduct, deleteProduct,
+        products, addProduct, updateProduct,
         addProductSale, currentUser, hasPermission, commissionRates, coupons
     } = useGym();
 
@@ -52,7 +52,7 @@ export default function StorePage() {
     // Discount State
     const [manualDiscount, setManualDiscount] = useState<number | "">("");
     const [couponCode, setCouponCode] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null); // Using any to avoid import issue for now, or Import Coupon
+    const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
     // Calculator Logic
     // Calculator Logic
@@ -90,7 +90,7 @@ export default function StorePage() {
     const discountedSubTotal = effectiveGrossTotal - totalVat; // New Net Subtotal
 
     const commissionRate = paymentMethod === 'card'
-        ? (commissionRates.find(c => c.installments === installment)?.rate || 0)
+        ? (commissionRates.find((c: CommissionRate) => c.installments === installment)?.rate || 0)
         : 0;
 
     // effectiveGrossTotal IS the Total With VAT
@@ -100,7 +100,7 @@ export default function StorePage() {
 
     // Handlers
     const handleApplyCoupon = () => {
-        const coupon = coupons.find(c => c.code === couponCode && c.isActive);
+        const coupon = coupons.find((c: Coupon) => c.code === couponCode && c.isActive);
         if (coupon) {
             setAppliedCoupon(coupon);
             setCouponCode("");
@@ -146,7 +146,7 @@ export default function StorePage() {
             [id]: {
                 ...prev[id],
                 [field]: value,
-                ...(field === 'addStock' ? { newCost: prev[id]?.newCost ?? products.find(p => p.id === id)?.cost ?? 0 } : { addStock: prev[id]?.addStock ?? 0 })
+                ...(field === 'addStock' ? { newCost: prev[id]?.newCost ?? products.find((p: Product) => p.id === id)?.cost ?? 0 } : { addStock: prev[id]?.addStock ?? 0 })
             }
         }));
     };
@@ -158,7 +158,7 @@ export default function StorePage() {
                 if (product) {
                     updateProduct(id, {
                         stock: product.stock + data.addStock,
-                        cost: data.newCost > 0 ? data.newCost : product.cost
+                        cost: data.newCost > 0 ? data.newCost : product.cost,
                     });
                 }
             }
@@ -234,7 +234,7 @@ export default function StorePage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {products.map(product => {
+                            {products.map((product: Product) => {
                                 const updates = stockUpdates[product.id] || { addStock: 0, newCost: product.cost };
                                 return (
                                     <tr key={product.id} className="hover:bg-zinc-50">
@@ -322,7 +322,7 @@ export default function StorePage() {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-medium text-zinc-700 mb-1">Kategori</label>
-                        <select value={prodCategory} onChange={e => setProdCategory(e.target.value as any)} className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 text-black focus:outline-none focus:border-indigo-500 focus:bg-white text-sm">
+                        <select value={prodCategory} onChange={e => setProdCategory(e.target.value as Product['category'])} className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 text-black focus:outline-none focus:border-indigo-500 focus:bg-white text-sm">
                             <option value="supplement">Supplement</option>
                             <option value="drink">İçecek</option>
                             <option value="clothing">Giyim</option>
@@ -453,12 +453,12 @@ export default function StorePage() {
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
                             {products
-                                .filter(product => {
+                                .filter((product: Product) => {
                                     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
                                     const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
                                     return matchesSearch && matchesCategory;
                                 })
-                                .map(product => (
+                                .map((product: Product) => (
                                     <tr key={product.id} className="hover:bg-zinc-50 group">
                                         <td className="p-4 font-medium text-black">
                                             <div className="flex flex-col">
@@ -597,7 +597,7 @@ export default function StorePage() {
                         <div className="bg-white border border-zinc-200 rounded-lg p-2">
                             <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase">Taksit Seçeneği</label>
                             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                                {commissionRates.sort((a, b) => a.installments - b.installments).map(rate => (
+                                {commissionRates.sort((a: CommissionRate, b: CommissionRate) => a.installments - b.installments).map((rate: CommissionRate) => (
                                     <button
                                         key={rate.installments}
                                         onClick={() => setInstallment(rate.installments)}
@@ -738,7 +738,7 @@ export default function StorePage() {
                             <label className="block text-xs font-medium text-zinc-700 mb-1">Kategori</label>
                             <select
                                 value={editForm.category}
-                                onChange={e => setEditForm({ ...editForm, category: e.target.value as any })}
+                                onChange={e => setEditForm({ ...editForm, category: e.target.value as Product['category'] })}
                                 className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 text-black focus:outline-none focus:border-indigo-500 focus:bg-white text-sm"
                             >
                                 <option value="supplement">Supplement</option>

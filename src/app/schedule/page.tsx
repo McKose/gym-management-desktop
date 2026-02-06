@@ -1,7 +1,7 @@
 "use client";
 
-import { useGym, Appointment, Branch } from "@/context/GymContext";
-import { useState, useMemo, useEffect } from "react";
+import { useGym, Appointment, Branch, Member, Staff, Package } from "@/context/GymContext";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Plus, Clock, Trash2 } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -31,13 +31,14 @@ const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "
 const ACTIVITY_TYPES: Branch[] = ["fitness", "reformer", "pilates", "yoga", "functional", "cardio", "boxing", "swimming"];
 
 export default function SchedulePage() {
-    const { trainers, members, appointments, addAppointment, deleteAppointment, cancelAppointment, updateAppointment, hasPermission, packages } = useGym();
+    const { trainers, members, appointments, addAppointment, cancelAppointment, updateAppointment, hasPermission, packages } = useGym();
     const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
     const [selectedTrainerId, setSelectedTrainerId] = useState<string>("");
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
+        const timer = setTimeout(() => setMounted(true), 0);
+        return () => clearTimeout(timer);
     }, []);
 
     // Permissions
@@ -113,9 +114,9 @@ export default function SchedulePage() {
     };
 
     const updateTypeForMember = (memberId: string) => {
-        const member = members.find(m => m.id === memberId);
+        const member = members.find((m: Member) => m.id === memberId);
         if (member && member.activePackageId) {
-            const pkg = packages.find(p => p.id === member.activePackageId);
+            const pkg = packages.find((p: Package) => p.id === member.activePackageId);
             if (pkg && pkg.branch) {
                 setModalData(prev => ({ ...prev, memberId, type: pkg.branch as string }));
                 return;
@@ -138,25 +139,25 @@ export default function SchedulePage() {
                 trainerId: modalData.trainerId,
                 date: modalData.date,
                 time: modalData.time,
-                type: modalData.type as any,
+                type: modalData.type as Branch,
                 description: modalData.description,
-                status: 'scheduled' // Reactivate if it was cancelled? Maybe not but let's assume update means fix.
+                status: 'scheduled'
             });
         } else {
             // Create New
-            const selectedMember = members.find(m => m.id === modalData.memberId);
-            const selectedPackage = selectedMember?.activePackageId ? packages.find(p => p.id === selectedMember.activePackageId) : null;
+            const selectedMember = members.find((m: Member) => m.id === modalData.memberId);
+            const selectedPackage = selectedMember?.activePackageId ? packages.find((p: Package) => p.id === selectedMember.activePackageId) : null;
 
             // Check if it's a group/duet session
             if (selectedMember?.groupId && selectedPackage && selectedPackage.sessionFormat !== 'BIREYSEL') {
-                const groupMembers = members.filter(m => m.groupId === selectedMember.groupId);
-                groupMembers.forEach(m => {
+                const groupMembers = members.filter((m: Member) => m.groupId === selectedMember.groupId);
+                groupMembers.forEach((m: Member) => {
                     addAppointment({
                         memberId: m.id,
                         trainerId: modalData.trainerId,
                         date: modalData.date,
                         time: modalData.time,
-                        type: modalData.type as any,
+                        type: modalData.type as Branch,
                         description: modalData.description
                     });
                 });
@@ -166,7 +167,7 @@ export default function SchedulePage() {
                     trainerId: modalData.trainerId,
                     date: modalData.date,
                     time: modalData.time,
-                    type: modalData.type as any,
+                    type: modalData.type as Branch,
                     description: modalData.description
                 });
             }
@@ -273,7 +274,7 @@ export default function SchedulePage() {
                                 required
                             >
                                 <option value="">Üye Seçiniz</option>
-                                {members.map(m => (
+                                {members.map((m: Member) => (
                                     <option key={m.id} value={m.id}>{m.fullName}</option>
                                 ))}
                             </select>
@@ -287,7 +288,7 @@ export default function SchedulePage() {
                                 required
                             >
                                 <option value="">Eğitmen Seçiniz</option>
-                                {trainers.map(t => (
+                                {trainers.map((t: Staff) => (
                                     <option key={t.id} value={t.id}>{t.name}</option>
                                 ))}
                             </select>
@@ -366,7 +367,7 @@ export default function SchedulePage() {
                         className="bg-white border border-zinc-200 rounded-lg px-4 py-2 text-black focus:outline-none focus:border-indigo-500 text-sm shadow-sm h-[40px]"
                     >
                         <option value="">Tüm Eğitmenler</option>
-                        {trainers.map(t => (
+                        {trainers.map((t: Staff) => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                     </select>
@@ -421,13 +422,13 @@ export default function SchedulePage() {
                             {/* Days Cells */}
                             {weekDays.map(day => {
                                 // Find appointment(s) for this slot
-                                const slotAppointments = appointments.filter(a =>
+                                const slotAppointments = appointments.filter((a: Appointment) =>
                                     a.date === day.date &&
                                     a.time === time &&
                                     (!selectedTrainerId || a.trainerId === selectedTrainerId)
                                 );
 
-                                const hasActive = slotAppointments.some(a => a.status !== 'cancelled');
+                                const hasActive = slotAppointments.some((a: Appointment) => a.status !== 'cancelled');
 
                                 return (
                                     <div
@@ -439,9 +440,9 @@ export default function SchedulePage() {
                                         `}
                                     >
                                         <div className="flex flex-col gap-2 h-full z-10 relative">
-                                            {slotAppointments.map(app => {
-                                                const trainer = trainers.find(t => t.id === app.trainerId);
-                                                const member = members.find(m => m.id === app.memberId);
+                                            {slotAppointments.map((app: Appointment) => {
+                                                const trainer = trainers.find((t: Staff) => t.id === app.trainerId);
+                                                const member = members.find((m: Member) => m.id === app.memberId);
                                                 const isCancelled = app.status === 'cancelled';
 
                                                 return (

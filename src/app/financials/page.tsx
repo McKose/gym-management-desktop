@@ -1,29 +1,34 @@
 "use client";
 
-import { useGym, Expense, Product, Staff } from "@/context/GymContext";
-import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, Wallet, CreditCard, Banknote, Calendar, ArrowRight, ArrowDownRight, ArrowUpRight, Download, Edit2 } from "lucide-react";
-import { createPortal } from "react-dom";
-import { downloadCSV } from "@/utils/export";
-import Modal from "@/components/Modal";
+import { useGym, Expense, Staff, Member, Package, ProductSale, Appointment, FixedExpense } from "../../context/GymContext";
+import { useState, useMemo } from "react";
+import { Plus, Trash2, CreditCard, Banknote, Calendar, Download, Edit2 } from "lucide-react";
+import { downloadCSV } from "../../utils/export";
+import Modal from "../../components/Modal";
+
+interface StaffEarningDetail {
+    id: string;
+    name: string;
+    role: string;
+    model: string;
+    count: number;
+    lessonEarning: number;
+    salary: number;
+    profitShareRate: number;
+}
 
 export default function FinancialsPage() {
     const {
         expenses, addExpense, deleteExpense,
         fixedExpenses, addFixedExpense, deleteFixedExpense,
         members, packages, productSales,
-        products, staff, trainers,
+        staff,
         appointments,
         hasPermission
     } = useGym();
 
     // Date Filter
-    const [selectedDate, setSelectedDate] = useState("");
-
-    useEffect(() => {
-        setSelectedDate(new Date().toISOString().slice(0, 7));
-    }, []); // YYYY-MM
-    const [year, month] = selectedDate.split('-').map(Number); // 2025, 12
+    const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
 
     // Permissions
     const canView = hasPermission("view_stats");
@@ -84,7 +89,7 @@ export default function FinancialsPage() {
             addExpense({
                 ...editExpenseForm,
                 id: editingExpense.id
-            } as any);
+            } as Expense); // Cast to Expense
             setIsEditExpenseModalOpen(false);
             setEditingExpense(null);
             alert("Gider güncellendi.");
@@ -92,17 +97,16 @@ export default function FinancialsPage() {
     };
 
     // Toggle Installment Payment
-    const handleTogglePayment = (expense: Expense) => {
-        const nextPaid = (expense.paidInstallments || 1) + 1;
+    const handleUpdateInstallment = (expense: Expense) => {
+        const nextPaid = (expense.paidInstallments || 0) + 1;
         const total = expense.installments || 1;
         const newStatus = nextPaid >= total ? "paid" : "pending";
 
-        deleteExpense(expense.id);
         addExpense({
             ...expense,
             paidInstallments: nextPaid > total ? total : nextPaid,
             status: newStatus
-        } as any);
+        } as unknown as Omit<Expense, 'id'>); // Simulating update as add by omitting id for GymContext's addExpense
     };
 
     // --- HELPERS ---
@@ -120,41 +124,41 @@ export default function FinancialsPage() {
     // 1. Income (Gelirler)
     const monthlyMembershipIncome = useMemo(() => {
         return members
-            .filter(m => m.startDate && m.startDate.startsWith(selectedDate))
-            .reduce((sum, m) => {
-                const pkg = packages.find(p => p.id === m.activePackageId);
+            .filter((m: Member) => m.startDate && m.startDate.startsWith(selectedDate))
+            .reduce((sum: number, m: Member) => {
+                const pkg = packages.find((p: Package) => p.id === m.activePackageId);
                 return sum + (pkg ? pkg.price : 0);
             }, 0);
     }, [members, packages, selectedDate]);
 
+    // const totalMemberIncome = ...;
     const monthlyProductIncome = useMemo(() => {
         return productSales
-            .filter(s => s.date && s.date.startsWith(selectedDate))
-            .reduce((sum, s) => sum + s.totalAmount, 0);
+            .filter((s: ProductSale) => s.date && s.date.startsWith(selectedDate))
+            .reduce((sum: number, s: ProductSale) => sum + s.totalAmount, 0);
     }, [productSales, selectedDate]);
 
     const totalIncome = monthlyMembershipIncome + monthlyProductIncome;
 
     // 2. Expenses (İşletme Giderleri)
     const currentMonthExpenses = useMemo(() => {
-        return expenses.filter(e => e.date && e.date.startsWith(selectedDate));
+        return expenses.filter((e: Expense) => e.date && e.date.startsWith(selectedDate));
     }, [expenses, selectedDate]);
 
     // Dynamic Stopaj (20% of Rent)
     const rentAmount = useMemo(() => {
-        const rentExpense = fixedExpenses.find(e => e.title.toLowerCase().includes("kira"));
-        return rentExpense ? rentExpense.amount : 0;
-    }, [fixedExpenses]);
+        const rentExp = expenses.find((e: Expense) => (e as any).category === 'Kira' && e.date && e.date.startsWith(selectedDate));
+        return rentExp ? rentExp.amount : 0;
+    }, [expenses, selectedDate]);
 
     const monthlyStopaj = useMemo(() => {
         if (!rentAmount) return 0;
-        // Calculation: 20% of rent amount is standard Stopaj in Turkey
         return rentAmount * 0.20;
     }, [rentAmount]);
 
     // Fixed Expenses
     const totalFixedExpenses = useMemo(() => {
-        return fixedExpenses.reduce((sum, e) => sum + e.amount, 0);
+        return fixedExpenses.reduce((sum: number, e: FixedExpense) => sum + e.amount, 0);
     }, [fixedExpenses]);
 
     // Variable Expenses Sums
@@ -164,11 +168,13 @@ export default function FinancialsPage() {
             consumable: 0,
             other: 0
         };
-        currentMonthExpenses.forEach(e => {
+        currentMonthExpenses.forEach((e: Expense) => {
             const cat = e.category as string;
+            const isRent = (e as any).category === "rent" || e.title.toLowerCase().includes("kira");
+            // Exclude 'Kira' and 'tax' categories from 'other' as they are handled separately
             if (cat === 'stock_purchase') sums.stock_purchase += e.amount;
             else if (cat === 'consumable') sums.consumable += e.amount;
-            else if (cat !== 'tax') sums.other += e.amount; // Taxes handled separately
+            else if (cat !== 'tax' && !isRent) sums.other += e.amount;
         });
         return sums;
     }, [currentMonthExpenses]);
@@ -179,15 +185,11 @@ export default function FinancialsPage() {
     // 3. Staff Costs (Maaşlar + Primler)
     // We calculate this early to deduct before Tax/Profit
     const staffCosts = useMemo(() => {
-        let totalSalaries = 0;
-        let totalCommissions = 0;
-
-        const staffEarnings_ = staff.map(st => {
+        const staffEarnings_ = staff.map((st: Staff) => {
             const payConf = st.paymentConfig || { model: 'commission' };
             const isTrainer = ['trainer', 'physio', 'manager', 'admin'].includes(st.role);
 
-            // Commission
-            const trAppointments = appointments.filter(a =>
+            const trAppointments = appointments.filter((a: Appointment) =>
                 a.trainerId === st.id &&
                 a.date &&
                 a.date.startsWith(selectedDate) &&
@@ -196,10 +198,10 @@ export default function FinancialsPage() {
 
             let lessonEarning = 0;
             if (isTrainer) {
-                trAppointments.forEach(appt => {
-                    const member = members.find(m => m.id === appt.memberId);
+                trAppointments.forEach((appt: Appointment) => {
+                    const member = members.find((m: Member) => m.id === appt.memberId);
                     if (member && member.activePackageId) {
-                        const pkg = packages.find(p => p.id === member.activePackageId);
+                        const pkg = packages.find((p: Package) => p.id === member.activePackageId);
                         if (pkg) {
                             const unitPrice = pkg.price / (pkg.sessionCount || 1);
                             const rate = (payConf.commissionRate || st.commissionRate || 0);
@@ -209,16 +211,7 @@ export default function FinancialsPage() {
                 });
             }
 
-            // Fixed Salary
             const salary = payConf.model === 'salaried' ? (payConf.salaryAmount || 0) : 0;
-
-            // Only sum up if NOT partner (Partners get share of Net Profit, not operational cost unless mixed)
-            // But wait, "Ücretli" gets salary. "Ortak" gets profit share.
-            // If an "Ortak" also has a salary defined, it should be an expense.
-            // Generally Partner Share is distribution of profit, Salary is expense.
-
-            totalSalaries += salary;
-            totalCommissions += lessonEarning;
 
             return {
                 id: st.id,
@@ -228,16 +221,18 @@ export default function FinancialsPage() {
                 count: trAppointments.length,
                 lessonEarning,
                 salary,
-                // Profit share calc needs Final Net Profit, so we just return partial here
                 profitShareRate: payConf.model === 'partner' ? (payConf.profitShareRate || 0) : 0
             };
         });
+
+        const totalSalaries = staffEarnings_.reduce((sum: number, s: any) => sum + s.salary, 0);
+        const totalCommissions = staffEarnings_.reduce((sum: number, s: any) => sum + s.lessonEarning, 0);
 
         return {
             totalSalaries,
             totalCommissions,
             total: totalSalaries + totalCommissions,
-            detail: staffEarnings_
+            details: staffEarnings_
         };
     }, [staff, appointments, members, packages, selectedDate]);
 
@@ -246,21 +241,21 @@ export default function FinancialsPage() {
         const currentYearMonth = selectedDate; // YYYY-MM
 
         // Overdue Memberships: pending and started BEFORE current filtered month
-        const overdueMembers = members.filter(m =>
+        const overdueMembers = members.filter((m: Member) =>
             m.paymentStatus === "pending" &&
             m.startDate &&
             m.startDate.slice(0, 7) < currentYearMonth
         );
 
         // Overdue Expenses: pending and date BEFORE current filtered month
-        const overdueExpenses = expenses.filter(e =>
+        const overdueExpenses = expenses.filter((e: Expense) =>
             e.status === "pending" &&
             e.date &&
             e.date.slice(0, 7) < currentYearMonth
         );
 
-        const totalOverdue = overdueMembers.reduce((sum, m) => sum + (m.pricePaid || 0), 0) +
-            overdueExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const totalOverdue = overdueMembers.reduce((sum: number, m: Member) => sum + (m.pricePaid || 0), 0) +
+            overdueExpenses.reduce((sum: number, e: Expense) => sum + (e.amount || 0), 0);
 
         return {
             members: overdueMembers,
@@ -279,7 +274,7 @@ export default function FinancialsPage() {
         vatLiability += monthlyMembershipIncome * 0.20; // Assuming 18% or 20%
 
         // Product VAT
-        productSales.filter(s => s.date && s.date.startsWith(selectedDate)).forEach(s => {
+        productSales.filter((s: ProductSale) => s.date && s.date.startsWith(selectedDate)).forEach((s: ProductSale) => {
             // Simplify: 20% VAT on total amount
             vatLiability += s.totalAmount * 0.20;
         });
@@ -307,7 +302,7 @@ export default function FinancialsPage() {
 
     // 6. Partner Distribution
     const staffCompleteEarnings = useMemo(() => {
-        return staffCosts.detail.map(s => {
+        return staffCosts.details.map((s: StaffEarningDetail) => {
             const profitShare = s.profitShareRate > 0 && finalNetProfit > 0
                 ? finalNetProfit * (s.profitShareRate / 100)
                 : 0;
@@ -317,7 +312,7 @@ export default function FinancialsPage() {
                 totalEarnings: s.lessonEarning + s.salary + profitShare
             };
         });
-    }, [staffCosts.detail, finalNetProfit]);
+    }, [staffCosts.details, finalNetProfit]);
 
 
     const handleExportFinancials = () => {
@@ -334,7 +329,7 @@ export default function FinancialsPage() {
     };
 
     const handleExportStaff = () => {
-        const data = staffCompleteEarnings.map(s => ({
+        const data = staffCompleteEarnings.map((s: StaffEarningDetail & { profitShare: number, totalEarnings: number }) => ({
             "Personel": s.name,
             "Rol": s.role,
             "Model": s.model === 'partner' ? 'Ortak' : s.model === 'salaried' ? 'Maaşlı' : 'Prim',
@@ -347,40 +342,7 @@ export default function FinancialsPage() {
 
     // --- SUMMARIES FOR DISPLAY ---
 
-    // Membership sales summary
-    const monthlyMembershipSummary = useMemo(() => {
-        const summary: Record<string, number> = {};
-        members.forEach(m => {
-            if (m.startDate && m.activePackageId) {
-                const [year, month] = m.startDate.split('-').map(Number);
-                if (year === Number(selectedDate.split('-')[0]) && month === Number(selectedDate.split('-')[1])) {
-                    const pkg = packages.find(p => p.id === m.activePackageId);
-                    if (pkg) {
-                        summary[pkg.name] = (summary[pkg.name] || 0) + 1;
-                    }
-                }
-            }
-        });
-        return summary;
-    }, [members, packages, selectedDate]);
-
-    // Product sales summary
-    const monthlyProductSummary = useMemo(() => {
-        let gross = 0;
-        let cost = 0;
-        productSales.forEach(s => {
-            if (s.date && s.date.startsWith(selectedDate)) {
-                gross += s.totalAmount;
-                s.items.forEach(item => {
-                    const prod = products.find(p => p.id === item.productId);
-                    if (prod) {
-                        cost += prod.cost * item.quantity;
-                    }
-                });
-            }
-        });
-        return { gross, cost, profit: gross - cost };
-    }, [productSales, products, selectedDate]);
+    // const monthlyIncome = useMemo(() => { ... }, [...]);
 
 
     if (!canView) return <div className="p-10 text-center text-zinc-500">Yetkiniz yok.</div>;
@@ -411,14 +373,14 @@ export default function FinancialsPage() {
                     <form onSubmit={(e) => {
                         e.preventDefault();
                         if (expenseType === 'normal') {
-                            addExpense({ ...newExpense, status: newExpense.paidInstallments >= newExpense.installments ? "paid" : "pending" } as any);
+                            addExpense({ ...newExpense, status: newExpense.paidInstallments >= newExpense.installments ? "paid" : "pending" } as unknown as Omit<Expense, 'id'>);
                         } else {
                             addFixedExpense({
                                 title: newExpense.title,
                                 amount: newExpense.amount,
                                 dayOfMonth: newExpense.dayOfMonth,
                                 type: expenseType
-                            } as any);
+                            } as unknown as Omit<FixedExpense, 'id'>);
                         }
                         setIsExpenseModalOpen(false);
                     }} className="space-y-3">
@@ -485,7 +447,7 @@ export default function FinancialsPage() {
                             installments: 1,
                             paidInstallments: 1,
                             status: 'paid'
-                        });
+                        } as unknown as Omit<Expense, 'id'>);
                         setIsBillPaymentModalOpen(false);
                         setPayingBill(null);
                         setBillAmount(0);
@@ -568,7 +530,7 @@ export default function FinancialsPage() {
                             className="bg-white border border-zinc-200 p-2 rounded-lg font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-black"
                         />
                         <button onClick={handleExportFinancials} className="btn-secondary flex items-center gap-2 text-sm">
-                            <Download size={16} /> Özet İndir
+                            <Download size={20} /> Excel&apos;e Aktar
                         </button>
                         <button onClick={handleExportStaff} className="btn-secondary flex items-center gap-2 text-sm">
                             <Download size={16} /> Personel İndir
@@ -675,7 +637,7 @@ export default function FinancialsPage() {
                                 </div>
                             </div>
                             <div className="divide-y divide-amber-100 max-h-[300px] overflow-y-auto">
-                                {overdueData.members.map(m => (
+                                {overdueData.members.map((m: Member) => (
                                     <div key={m.id} className="p-3 px-4 flex justify-between items-center hover:bg-amber-100/30 transition-colors">
                                         <div>
                                             <div className="font-bold text-xs text-amber-900">{m.fullName}</div>
@@ -687,7 +649,7 @@ export default function FinancialsPage() {
                                         </div>
                                     </div>
                                 ))}
-                                {overdueData.expenses.map(e => (
+                                {overdueData.expenses.map((e: Expense) => (
                                     <div key={e.id} className="p-3 px-4 flex justify-between items-center hover:bg-amber-100/30 transition-colors">
                                         <div>
                                             <div className="font-bold text-xs text-amber-900">{e.title}</div>
@@ -723,7 +685,7 @@ export default function FinancialsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100">
-                                    {staffCompleteEarnings.filter(e => e.totalEarnings > 0 || e.model === 'salaried' || e.model === 'partner').map(row => (
+                                    {staffCompleteEarnings.filter((e: StaffEarningDetail & { totalEarnings: number }) => e.totalEarnings > 0 || e.model === 'salaried' || e.model === 'partner').map((row: StaffEarningDetail & { totalEarnings: number, profitShare: number }) => (
                                         <tr key={row.id} className="hover:bg-zinc-50 transition-colors">
                                             <td className="p-2 font-medium text-zinc-800">
                                                 {row.name}
@@ -757,7 +719,7 @@ export default function FinancialsPage() {
                                 <CreditCard size={18} className="text-zinc-300" />
                             </div>
                             <div className="divide-y divide-zinc-100">
-                                {expenses.filter(e => (e.installments || 1) > 1).map(exp => (
+                                {expenses.filter((e: Expense) => (e.installments || 1) > 1).map((exp: Expense) => (
                                     <div key={exp.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
                                         <div>
                                             <div className="font-bold text-sm">{exp.title}</div>
@@ -776,7 +738,7 @@ export default function FinancialsPage() {
                                             <div className="flex items-center gap-2">
                                                 {exp.status !== 'paid' && (
                                                     <button
-                                                        onClick={() => handleTogglePayment(exp)}
+                                                        onClick={() => handleUpdateInstallment(exp)}
                                                         className="px-2 py-1 bg-black text-white text-[10px] font-bold rounded hover:bg-zinc-800 transition-colors"
                                                     >
                                                         Taksit Öde
@@ -792,7 +754,7 @@ export default function FinancialsPage() {
                                         </div>
                                     </div>
                                 ))}
-                                {expenses.filter(e => (e.installments || 1) > 1).length === 0 && (
+                                {expenses.filter((e: Expense) => (e.installments || 1) > 1).length === 0 && (
                                     <div className="p-8 text-center text-zinc-400 text-xs italic">Taksitli ödeme bulunamadı.</div>
                                 )}
                             </div>
@@ -805,11 +767,11 @@ export default function FinancialsPage() {
                                 <span className="text-xs font-bold text-red-500">-{formatCurrency(totalOperatingExpenses)}</span>
                             </div>
                             <div className="divide-y divide-zinc-100 max-h-[400px] overflow-y-auto">
-                                {[...currentMonthExpenses].map((e: any) => (
+                                {[...currentMonthExpenses].map((e: Expense) => (
                                     <div key={e.id} className="p-3 px-4 flex justify-between items-center hover:bg-zinc-50">
                                         <div>
                                             <div className="font-medium text-xs text-zinc-800">{e.title}</div>
-                                            <div className="text-[10px] text-zinc-400 uppercase tracking-tighter">{e.dayOfMonth ? 'Sabit Gider' : e.category}</div>
+                                            <div className="text-[10px] text-zinc-400 uppercase tracking-tighter">{(e as any).dayOfMonth ? 'Sabit Gider' : e.category}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold text-red-500 text-xs text-right">-{formatCurrency(e.amount)}</span>
@@ -831,7 +793,7 @@ export default function FinancialsPage() {
                                 <Calendar size={18} className="text-zinc-300" />
                             </div>
                             <div className="divide-y divide-zinc-100">
-                                {fixedExpenses.map((e) => (
+                                {fixedExpenses.map((e: FixedExpense) => (
                                     <div key={e.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 flex items-center justify-center bg-zinc-100 rounded-lg text-zinc-500 font-bold text-xs">

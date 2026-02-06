@@ -1,7 +1,8 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Member, Package, Service, Staff, Appointment } from "@/types";
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import { Member, Package, Service, Staff } from "@/context/GymContext";
 
 interface MemberContextType {
     members: Member[];
@@ -40,21 +41,21 @@ export function MemberProvider({ children }: { children: ReactNode }) {
     const [staff, setStaff] = useState<Staff[]>([]);
 
     // --- Actions --- (Placement holders)
-    const addMember = (m: any) => { return "temp-id" };
-    const updateMember = (id: string, data: any) => { };
-    const deleteMember = (id: string) => { };
-    const renewMembership = (id: string) => { };
+    const addMember = (_m: Omit<Member, "id" | "status" | "history">) => { return "temp-id" };
+    const updateMember = (_id: string, _data: Partial<Member>) => { };
+    const deleteMember = (_id: string) => { };
+    const renewMembership = (_memberId: string, _newPackageId: string, _startDate: string, _pricePaid: number, _paymentType: "cash" | "card", _installments?: number) => { };
 
-    const addPackage = (p: any) => { };
-    const updatePackage = (id: string, p: any) => { };
-    const deletePackage = (id: string) => { };
+    const addPackage = (_p: Omit<Package, "id">) => { };
+    const updatePackage = (_id: string, _p: Partial<Package>) => { };
+    const deletePackage = (_id: string) => { };
 
-    const addService = (s: any) => { };
-    const updateService = (id: string, s: any) => { };
+    const addService = (_s: Omit<Service, "id">) => { };
+    const updateService = (_id: string, _s: Partial<Service>) => { };
 
-    const addStaff = (s: any) => { };
-    const updateStaff = (id: string, s: any) => { };
-    const deleteStaff = (id: string) => { };
+    const addStaff = (_s: Omit<Staff, "id">) => { };
+    const updateStaff = (_id: string, _s: Partial<Staff>) => { };
+    const deleteStaff = (_id: string) => { };
 
     return (
         <MemberContext.Provider value={{
