@@ -92,7 +92,7 @@ app.whenReady().then(() => {
             if (safePath.includes('?')) safePath = safePath.split('?')[0];
 
             let fullPath = path.join(serveDir, safePath);
-            // let stat = null; // Removed unused stat variable
+            let stat = null;
             let foundPath = null;
 
             // Strategy:

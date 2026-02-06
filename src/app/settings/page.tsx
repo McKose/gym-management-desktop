@@ -3,6 +3,7 @@
 import { useGym, Role, Permission, CommissionRate, Coupon, Staff } from "@/context/GymContext";
 import { useState, useEffect } from "react";
 import { Key, Percent, Plus, Trash2, Save, CreditCard, ShieldCheck, RefreshCw, Download, CheckCircle2, AlertCircle } from "lucide-react";
+import packageJson from "../../../package.json";
 
 export default function SettingsPage() {
     const {
@@ -472,7 +473,7 @@ export default function SettingsPage() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="space-y-1">
                                 <div className="text-sm font-bold text-zinc-800">
-                                    Mevcut Versiyon: <span className="text-zinc-500 font-mono">v1.0.8</span>
+                                    Mevcut Versiyon: <span className="text-zinc-500 font-mono">v{packageJson.version}</span>
                                 </div>
                                 <div className="text-xs text-zinc-400">
                                     {updateStatus === 'idle' && "Güncelleştirmeleri kontrol etmek için butona tıklayın."}
